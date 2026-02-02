@@ -18,22 +18,22 @@ export default function Footer() {
               Home
             </Link>
             <Link
-              href="/about"
+              href="/dashboard"
               className="text-sm text-muted transition-colors duration-150 hover:text-foreground"
             >
-              About
+              Dashboard
             </Link>
             <Link
-              href="/contact"
+              href="/assistant"
               className="text-sm text-muted transition-colors duration-150 hover:text-foreground"
             >
-              Contact
+              Assistant
             </Link>
             <Link
-              href="/product"
+              href="/transactions"
               className="text-sm text-muted transition-colors duration-150 hover:text-foreground"
             >
-              Product
+              Transactions
             </Link>
           </div>
         </div>

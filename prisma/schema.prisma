@@ -12,10 +12,12 @@ model User {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
   
-  plans         Plan[]
-  transactions  Transaction[]
-  plannedItems  PlannedItem[]
+  plans          Plan[]
+  transactions   Transaction[]
+  plannedItems   PlannedItem[]
   fafsaChecklist FafsaChecklist?
+  incomeSources  IncomeSource[]
+  emergencyFund  EmergencyFund?
 }
 
 model Plan {
@@ -31,7 +33,7 @@ model Plan {
   // Starting balance
   startingBalance      Float
   
-  // Funding
+  // Funding (legacy - can be derived from IncomeSource)
   grants               Float    @default(0)
   loans                Float    @default(0)
   workStudyMonthly     Float    @default(0)
@@ -95,4 +97,40 @@ model FafsaChecklist {
   markCalendar    Boolean  @default(false)
   
   updatedAt       DateTime @updatedAt
+}
+
+// NEW: Income Sources - track all money coming in
+model IncomeSource {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type         String   // "job" | "scholarship" | "grant" | "loan" | "family" | "work_study" | "other"
+  name         String   // e.g., "Campus Library Job", "Pell Grant", "Subsidized Loan"
+  amount       Float    // Total or periodic amount
+  frequency    String   // "one_time" | "monthly" | "biweekly" | "weekly" | "semester"
+  startDate    DateTime?
+  endDate      DateTime?
+  isLoan       Boolean  @default(false)
+  interestRate Float?   // For loans only (as percentage, e.g., 4.5)
+  notes        String?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([userId, type])
+}
+
+// NEW: Emergency Fund - savings goal tracking
+model EmergencyFund {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  targetAmount        Float    @default(500)   // Goal amount
+  currentAmount       Float    @default(0)     // Saved so far
+  weeklyContribution  Float    @default(0)     // Auto-save per week
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }

@@ -29,6 +29,12 @@ export default function Footer() {
             >
               Contact
             </Link>
+            <Link
+              to="/product"
+              className="text-sm text-muted transition-colors duration-150 hover:text-foreground"
+            >
+              Product
+            </Link>
           </div>
         </div>
       </div>

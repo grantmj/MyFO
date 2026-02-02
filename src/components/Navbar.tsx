@@ -50,9 +50,21 @@ export default function Navbar() {
             >
               Contact
             </NavLink>
+            <NavLink
+              to="/product"
+              className={({ isActive }) =>
+                `text-sm font-medium transition-colors duration-150 ${
+                  isActive
+                    ? "text-foreground underline decoration-foreground/30 underline-offset-4"
+                    : "text-muted hover:text-foreground"
+                }`
+              }
+            >
+              Product
+            </NavLink>
             <div className="ml-4 flex items-center gap-3">
               <Button variant="ghost">Sign in</Button>
-              <Button variant="primary" to="/contact">
+              <Button variant="primary" to="/product">
                 Get started
               </Button>
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -19,11 +20,13 @@ interface Evaluation {
 
 export default function AssistantPage() {
   const { showToast } = useToast();
+  const searchParams = useSearchParams();
   const [userId, setUserId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [configError, setConfigError] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,6 +50,18 @@ export default function AssistantPage() {
           content: "Hi! I'm MyFO, your financial copilot. Ask me questions like:\n\n• Can I afford to buy a $90 concert ticket?\n• How am I doing on my budget?\n• What should I cut back on?\n• Can I take a trip that costs $400?\n\nI'll give you honest answers based on your actual budget, not guesses!",
         },
       ]);
+      
+      setIsInitialized(true);
+
+      // Check if there's a query parameter from the homepage
+      const query = searchParams.get('q');
+      if (query) {
+        setInput(query);
+        // Auto-send the message after a brief delay to let the user see it
+        setTimeout(() => {
+          sendMessageWithContent(query, user.id);
+        }, 500);
+      }
     } catch (error) {
       console.error('Error initializing page:', error);
       showToast('Failed to initialize chat', 'error');
@@ -57,10 +72,10 @@ export default function AssistantPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  async function sendMessage() {
-    if (!input.trim() || !userId || loading) return;
+  async function sendMessageWithContent(messageContent: string, userIdToUse: string) {
+    if (!messageContent.trim() || !userIdToUse || loading) return;
 
-    const userMessage = input.trim();
+    const userMessage = messageContent.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
@@ -71,7 +86,7 @@ export default function AssistantPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId,
+          userId: userIdToUse,
           message: userMessage,
           conversationHistory: messages.map(m => ({
             role: m.role,
@@ -107,6 +122,11 @@ export default function AssistantPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function sendMessage() {
+    if (!userId) return;
+    sendMessageWithContent(input, userId);
   }
 
   function handleKeyPress(e: React.KeyboardEvent<HTMLInputElement>) {

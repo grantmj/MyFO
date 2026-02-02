@@ -3,32 +3,105 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [chatInput, setChatInput] = useState("");
+  const router = useRouter();
+
+  const handleChatSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (chatInput.trim()) {
+      router.push(`/assistant?q=${encodeURIComponent(chatInput)}`);
+    } else {
+      router.push("/assistant");
+    }
+  };
 
   return (
     <div>
-      {/* Hero */}
-      <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 md:py-32 lg:py-40">
-        <div className="max-w-3xl">
-          <h1 className="text-5xl font-medium tracking-tight text-gray-900 md:text-6xl lg:text-7xl leading-tight">
-            Plan, track, and stay in control of your student finances
-          </h1>
-          <p className="mt-6 text-lg text-gray-600 md:text-xl leading-relaxed">
-            AI-powered semester budgeting that answers "can I afford this?" with smart tradeoff analysis and personalized coaching for college students.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-4 items-center">
-            <Button variant="primary" href="/onboarding">
-              Get started
-            </Button>
-            <a 
-              href="#how-it-works" 
-              className="text-sm font-medium text-gray-900 hover:text-gray-600 transition-colors inline-flex items-center gap-1"
-            >
-              Learn more
-              <span className="text-xs">→</span>
-            </a>
+      {/* Hero with Chatbot Widget */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div 
+            className="relative rounded-[3rem] overflow-hidden"
+            style={{
+              backgroundImage: 'url(/campus-background.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          >
+            {/* Overlay for better text readability */}
+            <div className="absolute inset-0 bg-white/30 backdrop-blur-[2px]" />
+            
+            <div className="relative z-10 px-8 py-24 sm:px-12 lg:px-16 md:py-32 lg:py-40">
+              <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
+                {/* Left side - Content */}
+                <div>
+                  <h1 className="text-5xl font-medium tracking-tight text-gray-900 md:text-6xl lg:text-7xl leading-tight drop-shadow-sm">
+                    Plan, track, and stay in control of your student finances
+                  </h1>
+                  <p className="mt-6 text-lg md:text-xl text-gray-900 leading-relaxed drop-shadow-sm">
+                    AI-powered semester budgeting that answers "can I afford this?" with smart tradeoff analysis and personalized coaching for college students.
+                  </p>
+                  <div className="mt-8 flex flex-wrap gap-4 items-center">
+                    <Button variant="primary" href="/onboarding">
+                      Get started
+                    </Button>
+                    <a 
+                      href="#how-it-works" 
+                      className="text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors inline-flex items-center gap-1 drop-shadow-sm"
+                    >
+                      Learn more
+                      <span className="text-xs">→</span>
+                    </a>
+                  </div>
+                </div>
+
+                {/* Right side - Chatbot Widget with Glassmorphism */}
+                <div className="lg:ml-auto lg:max-w-lg w-full">
+                  <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/50 p-8 shadow-xl">
+                    <div className="mb-6">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent/20 backdrop-blur-sm flex items-center justify-center">
+                          <span className="text-accent text-sm font-medium">M</span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-base text-gray-900 font-medium">MyFO Assistant</p>
+                          <p className="mt-2 text-sm text-gray-800 leading-relaxed">
+                            What finances do you need help with today?
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleChatSubmit} className="space-y-4">
+                      <div>
+                        <textarea
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          placeholder="Ask about budgeting, spending, or any financial question..."
+                          rows={4}
+                          className="w-full rounded-lg border border-white/60 bg-white/60 backdrop-blur-sm px-4 py-3 text-sm text-gray-900 placeholder:text-gray-600 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        className="w-full rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white hover:bg-accent/90 transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 shadow-lg"
+                      >
+                        Get answers →
+                      </button>
+                    </form>
+
+                    <p className="mt-4 text-xs text-gray-700 text-center">
+                      Try the interactive demo
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

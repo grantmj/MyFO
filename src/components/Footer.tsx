@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -12,25 +12,25 @@ export default function Footer() {
           </p>
           <div className="flex gap-6">
             <Link
-              to="/"
+              href="/"
               className="text-sm text-muted transition-colors duration-150 hover:text-foreground"
             >
               Home
             </Link>
             <Link
-              to="/about"
+              href="/about"
               className="text-sm text-muted transition-colors duration-150 hover:text-foreground"
             >
               About
             </Link>
             <Link
-              to="/contact"
+              href="/contact"
               className="text-sm text-muted transition-colors duration-150 hover:text-foreground"
             >
               Contact
             </Link>
             <Link
-              to="/product"
+              href="/product"
               className="text-sm text-muted transition-colors duration-150 hover:text-foreground"
             >
               Product

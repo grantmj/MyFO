@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { type ButtonHTMLAttributes, type ReactNode } from "react";
 
 type Variant = "primary" | "secondary" | "ghost";
@@ -6,24 +6,24 @@ type Variant = "primary" | "secondary" | "ghost";
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   children: ReactNode;
-  to?: string;
+  href?: string;
   className?: string;
 }
 
 const variantStyles: Record<Variant, string> = {
   primary:
-    "bg-foreground text-white hover:bg-neutral-800 border-transparent focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-foreground",
+    "bg-accent text-white hover:bg-accent/90 border-transparent focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent",
   secondary:
-    "bg-white text-foreground border border-border hover:bg-neutral-50 hover:border-neutral-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-foreground",
+    "bg-white text-foreground border border-border hover:bg-surface hover:border-accent/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent",
   ghost:
-    "bg-transparent text-foreground hover:bg-neutral-100 border-transparent focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-foreground",
+    "bg-transparent text-foreground hover:bg-surface border-transparent focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent",
 };
 
 export default function Button({
   variant = "primary",
   children,
   className = "",
-  to,
+  href,
   ...props
 }: ButtonProps) {
   const base =
@@ -31,9 +31,9 @@ export default function Button({
 
   const combined = `${base} ${variantStyles[variant]} ${className}`;
 
-  if (to) {
+  if (href) {
     return (
-      <Link to={to} className={combined}>
+      <Link href={href} className={combined}>
         {children}
       </Link>
     );

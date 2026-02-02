@@ -1,59 +1,46 @@
-# project-web
+# MyFO
 
-React + TypeScript frontend using Vite. Calls the project-api REST backend.
+Next.js 14 (App Router) + TypeScript frontend with Tailwind CSS.
 
 ## Requirements
 
-- [Bun](https://bun.sh) (v1.0+ recommended) or Node.js 18+
-
-```bash
-curl -fsSL https://bun.sh/install | bash
-```
+- Node.js 18+ (or [Bun](https://bun.sh))
 
 ## Setup
 
 ```bash
-bun install
+npm install
 ```
 
 ## Environment Variables
 
-| Variable           | Default               | Description              |
-|--------------------|-----------------------|--------------------------|
-| VITE_API_BASE_URL  | http://localhost:3001 | Backend API base URL     |
+| Variable | Description |
+|----------|-------------|
+| (none required for basic run) | Add `OPENAI_API_KEY`, `DATABASE_URL` when building MyFO features |
 
-Copy `.env.example` to `.env` and adjust. Vite loads `.env` automatically.
+Copy `.env.example` to `.env` and adjust as needed.
 
 ## Run
 
 ```bash
 # Development
-bun run dev
+npm run dev
 
 # Build
-bun run build
+npm run build
 
-# Preview production build
-bun run preview
+# Start production server
+npm start
 ```
 
 ## Usage
 
-1. Start the backend (`project-api`) first: `cd project-api && bun run dev`
-2. Start this frontend: `bun run dev`
-3. Open http://localhost:5173
+1. Run `npm run dev`
+2. Open http://localhost:3000
 
 The app includes:
 - **Landing page** (/) with hero section
-- **About page** (/about) placeholder
+- **About**, **Contact**, **Product** pages
 - **Navbar** and **Footer** on all pages
 - **Tailwind CSS** for styling
-- **React Router** for navigation
-
-When the backend is running, you can add API calls (e.g. `GET /health`, `GET /api/v1/example`) to any page.
-
-## Troubleshooting
-
-- **API connection refused**: Ensure `project-api` is running on port 3001
-- **CORS errors**: Backend must have `CORS_ORIGIN=http://localhost:5173` (default)
-- **Wrong API URL**: Set `VITE_API_BASE_URL` in `.env` to match your backend
+- **Next.js App Router** for file-based routing

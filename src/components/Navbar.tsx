@@ -3,44 +3,35 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const navLinks = [
-  { href: "/", label: "Home", end: true },
-  { href: "/dashboard", label: "Dashboard", end: false },
-  { href: "/transactions", label: "Transactions", end: false },
-  { href: "/assistant", label: "Ask MyFO", end: false },
-];
-
 export default function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-14 items-center justify-between">
+    <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">MyFO</span>
+            <span className="text-lg font-semibold text-gray-900">MyFO</span>
           </Link>
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            {navLinks.map(({ href, label, end }) => {
-              const isActive = pathname
-                ? end
-                  ? pathname === href
-                  : pathname.startsWith(href)
-                : false;
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`text-sm font-medium transition-colors duration-150 ${
-                    isActive
-                      ? "text-foreground underline decoration-foreground/30 underline-offset-4"
-                      : "text-muted hover:text-foreground"
-                  }`}
-                >
-                  {label}
-                </Link>
-              );
-            })}
+          <div className="flex items-center gap-6">
+            <Link
+              href="/#how-it-works"
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              About
+            </Link>
+            <Link
+              href="/dashboard"
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Demo
+            </Link>
+            <Link
+              href="/onboarding"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 transition-colors"
+            >
+              Get started
+            </Link>
           </div>
         </div>
       </div>

@@ -4,36 +4,30 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto border-t border-border bg-white">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-          <p className="text-sm text-muted">
+    <footer className="mt-auto border-t border-gray-200 bg-white">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
+          <p className="text-sm text-gray-600">
             © {currentYear} MyFO. All rights reserved.
           </p>
-          <div className="flex gap-6">
+          <div className="flex gap-8">
             <Link
-              href="/"
-              className="text-sm text-muted transition-colors duration-150 hover:text-foreground"
+              href="/#how-it-works"
+              className="text-sm text-gray-600 transition-colors hover:text-gray-900"
             >
-              Home
+              About
             </Link>
             <Link
               href="/dashboard"
-              className="text-sm text-muted transition-colors duration-150 hover:text-foreground"
+              className="text-sm text-gray-600 transition-colors hover:text-gray-900"
             >
-              Dashboard
+              Demo
             </Link>
             <Link
-              href="/assistant"
-              className="text-sm text-muted transition-colors duration-150 hover:text-foreground"
+              href="/onboarding"
+              className="text-sm text-gray-600 transition-colors hover:text-gray-900"
             >
-              Assistant
-            </Link>
-            <Link
-              href="/transactions"
-              className="text-sm text-muted transition-colors duration-150 hover:text-foreground"
-            >
-              Transactions
+              Get started
             </Link>
           </div>
         </div>

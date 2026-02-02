@@ -14,9 +14,9 @@ const variantStyles: Record<Variant, string> = {
   primary:
     "bg-accent text-white hover:bg-accent/90 border-transparent focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent",
   secondary:
-    "bg-white text-foreground border border-border hover:bg-surface hover:border-accent/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent",
+    "bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent",
   ghost:
-    "bg-transparent text-foreground hover:bg-surface border-transparent focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent",
+    "bg-transparent text-gray-900 hover:bg-gray-50 border-transparent focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent",
 };
 
 export default function Button({

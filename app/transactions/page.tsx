@@ -73,7 +73,7 @@ export default function TransactionsPage() {
           return;
         }
 
-        const headers = Object.keys(results.data[0]);
+        const headers = Object.keys(results.data[0] as Record<string, unknown>);
         setCsvHeaders(headers);
         setCsvData(results.data);
 

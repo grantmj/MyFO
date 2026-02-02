@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Logo from "./Logo";
 
 const navLinks = [
   { href: "/", label: "Dashboard", end: true },
@@ -18,7 +17,6 @@ export default function Navbar() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Logo />
             <span className="text-sm font-semibold text-foreground">MyFO</span>
           </Link>
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">

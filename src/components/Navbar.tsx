@@ -10,7 +10,7 @@ export default function Navbar() {
             to="/"
             className="text-lg font-semibold text-foreground transition-colors duration-150 hover:text-muted"
           >
-            PIA Hackathon
+            MyFO
           </Link>
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
             <NavLink

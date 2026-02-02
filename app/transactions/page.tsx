@@ -1,0 +1,339 @@
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import Select from "@/components/ui/Select";
+import { useToast } from "@/components/ui/Toast";
+import { CATEGORY_LABELS, Category } from "@/lib/constants";
+import { format } from "date-fns";
+import Papa from "papaparse";
+
+interface Transaction {
+  id: string;
+  date: Date;
+  description: string;
+  amount: number;
+  category: string;
+  source: string;
+}
+
+export default function TransactionsPage() {
+  const { showToast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+
+  // CSV parsing state
+  const [showColumnMapper, setShowColumnMapper] = useState(false);
+  const [csvData, setCsvData] = useState<any[]>([]);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [dateColumn, setDateColumn] = useState('');
+  const [descColumn, setDescColumn] = useState('');
+  const [amountColumn, setAmountColumn] = useState('');
+  const [amountConvention, setAmountConvention] = useState<'positive-spend' | 'negative-spend'>('positive-spend');
+
+  useEffect(() => {
+    initializePage();
+  }, []);
+
+  async function initializePage() {
+    try {
+      const userRes = await fetch('/api/user');
+      const { user } = await userRes.json();
+      setUserId(user.id);
+
+      await fetchTransactions(user.id);
+    } catch (error) {
+      console.error('Error initializing page:', error);
+      showToast('Failed to load transactions', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchTransactions(uid: string) {
+    const res = await fetch(`/api/transactions?userId=${uid}`);
+    const { transactions } = await res.json();
+    setTransactions(transactions);
+  }
+
+  function handleFileSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if (results.data.length === 0) {
+          showToast('CSV file is empty', 'error');
+          return;
+        }
+
+        const headers = Object.keys(results.data[0]);
+        setCsvHeaders(headers);
+        setCsvData(results.data);
+
+        // Try to auto-detect columns
+        const dateCols = ['date', 'transaction date', 'posted date'];
+        const descCols = ['description', 'name', 'merchant'];
+        const amountCols = ['amount', 'debit', 'credit'];
+
+        const dateCol = headers.find(h => dateCols.includes(h.toLowerCase())) || '';
+        const descCol = headers.find(h => descCols.includes(h.toLowerCase())) || '';
+        const amountCol = headers.find(h => amountCols.includes(h.toLowerCase())) || '';
+
+        if (dateCol && descCol && amountCol) {
+          // Auto-detected all columns
+          setDateColumn(dateCol);
+          setDescColumn(descCol);
+          setAmountColumn(amountCol);
+          setShowColumnMapper(false);
+          processCSV(results.data, dateCol, descCol, amountCol);
+        } else {
+          // Need user to map columns
+          setDateColumn(dateCol);
+          setDescColumn(descCol);
+          setAmountColumn(amountCol);
+          setShowColumnMapper(true);
+        }
+      },
+      error: (error) => {
+        console.error('CSV parse error:', error);
+        showToast('Failed to parse CSV file', 'error');
+      },
+    });
+  }
+
+  async function processCSV(
+    data: any[],
+    dateCol: string,
+    descCol: string,
+    amountCol: string
+  ) {
+    if (!userId) return;
+
+    try {
+      setUploading(true);
+
+      const transactions = data.map(row => ({
+        date: row[dateCol],
+        description: row[descCol],
+        amount: parseFloat(row[amountCol]),
+      })).filter(t => t.date && t.description && !isNaN(t.amount));
+
+      if (transactions.length === 0) {
+        showToast('No valid transactions found in CSV', 'error');
+        return;
+      }
+
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          transactions,
+          amountConvention,
+        }),
+      });
+
+      if (res.ok) {
+        const { count } = await res.json();
+        showToast(`Imported ${count} transactions successfully!`, 'success');
+        await fetchTransactions(userId);
+        resetCSVState();
+      } else {
+        showToast('Failed to import transactions', 'error');
+      }
+    } catch (error) {
+      console.error('Error importing transactions:', error);
+      showToast('Failed to import transactions', 'error');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function resetCSVState() {
+    setCsvData([]);
+    setCsvHeaders([]);
+    setDateColumn('');
+    setDescColumn('');
+    setAmountColumn('');
+    setShowColumnMapper(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }
+
+  async function updateTransactionCategory(transactionId: string, category: string) {
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionId, category }),
+      });
+
+      if (res.ok) {
+        showToast('Category updated', 'success');
+        if (userId) await fetchTransactions(userId);
+      }
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      showToast('Failed to update category', 'error');
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-medium text-foreground">Transactions</h1>
+          <p className="mt-1 text-sm text-muted">Import and manage your spending</p>
+        </div>
+
+        {/* CSV Import Section */}
+        <Card className="mb-6">
+          <h2 className="text-lg font-medium text-foreground mb-4">Import from CSV</h2>
+          <p className="text-sm text-muted mb-4">
+            Upload a CSV file from your bank. Should include Date, Description, and Amount columns.
+          </p>
+          
+          <div className="space-y-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={handleFileSelect}
+              className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-accent file:text-white hover:file:bg-accent/90"
+            />
+
+            {showColumnMapper && (
+              <div className="pt-4 border-t border-border">
+                <h3 className="text-sm font-medium text-foreground mb-3">Map CSV Columns</h3>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <Select
+                    label="Date Column"
+                    value={dateColumn}
+                    onChange={(e) => setDateColumn(e.target.value)}
+                    options={[
+                      { value: '', label: 'Select...' },
+                      ...csvHeaders.map(h => ({ value: h, label: h })),
+                    ]}
+                  />
+                  <Select
+                    label="Description Column"
+                    value={descColumn}
+                    onChange={(e) => setDescColumn(e.target.value)}
+                    options={[
+                      { value: '', label: 'Select...' },
+                      ...csvHeaders.map(h => ({ value: h, label: h })),
+                    ]}
+                  />
+                  <Select
+                    label="Amount Column"
+                    value={amountColumn}
+                    onChange={(e) => setAmountColumn(e.target.value)}
+                    options={[
+                      { value: '', label: 'Select...' },
+                      ...csvHeaders.map(h => ({ value: h, label: h })),
+                    ]}
+                  />
+                </div>
+                <div className="mt-3">
+                  <Select
+                    label="Amount Convention"
+                    value={amountConvention}
+                    onChange={(e) => setAmountConvention(e.target.value as any)}
+                    options={[
+                      { value: 'positive-spend', label: 'Positive = Spending (e.g., 50.00)' },
+                      { value: 'negative-spend', label: 'Negative = Spending (e.g., -50.00)' },
+                    ]}
+                  />
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <Button
+                    variant="primary"
+                    onClick={() => processCSV(csvData, dateColumn, descColumn, amountColumn)}
+                    disabled={!dateColumn || !descColumn || !amountColumn || uploading}
+                  >
+                    {uploading ? 'Importing...' : 'Import Transactions'}
+                  </Button>
+                  <Button variant="ghost" onClick={resetCSVState}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Transactions Table */}
+        <Card>
+          <h2 className="text-lg font-medium text-foreground mb-4">
+            All Transactions ({transactions.length})
+          </h2>
+          
+          {transactions.length === 0 ? (
+            <p className="text-sm text-muted">No transactions yet. Import your bank CSV to get started.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-2 font-medium text-muted">Date</th>
+                    <th className="text-left py-3 px-2 font-medium text-muted">Description</th>
+                    <th className="text-left py-3 px-2 font-medium text-muted">Amount</th>
+                    <th className="text-left py-3 px-2 font-medium text-muted">Category</th>
+                    <th className="text-left py-3 px-2 font-medium text-muted">Source</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.map((transaction) => (
+                    <tr key={transaction.id} className="border-b border-border last:border-0">
+                      <td className="py-3 px-2 text-foreground whitespace-nowrap">
+                        {format(new Date(transaction.date), 'MMM dd, yyyy')}
+                      </td>
+                      <td className="py-3 px-2 text-foreground">
+                        {transaction.description}
+                      </td>
+                      <td className="py-3 px-2 text-foreground font-medium">
+                        ${Math.abs(transaction.amount).toFixed(2)}
+                      </td>
+                      <td className="py-3 px-2">
+                        <select
+                          value={transaction.category}
+                          onChange={(e) => updateTransactionCategory(transaction.id, e.target.value)}
+                          className="text-xs border border-border rounded px-2 py-1 text-foreground bg-white focus:outline-none focus:ring-1 focus:ring-accent"
+                        >
+                          {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-3 px-2 text-muted text-xs">
+                        {transaction.source}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}

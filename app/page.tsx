@@ -1,238 +1,351 @@
 "use client";
 
-import Button from "@/components/ui/Button";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Card from "@/components/ui/Card";
-import { useState } from "react";
+import Button from "@/components/ui/Button";
+import { BudgetSnapshot } from "@/lib/types";
+import { CATEGORY_LABELS } from "@/lib/constants";
+import { format } from "date-fns";
+import { useToast } from "@/components/ui/Toast";
 
-export default function Home() {
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
+interface FafsaChecklist {
+  createFsaId: boolean;
+  gatherTaxDocs: boolean;
+  listSchools: boolean;
+  submitFafsa: boolean;
+  verification: boolean;
+  reviewAward: boolean;
+  acceptAid: boolean;
+  markCalendar: boolean;
+}
+
+export default function Dashboard() {
+  const router = useRouter();
+  const { showToast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [snapshot, setSnapshot] = useState<BudgetSnapshot | null>(null);
+  const [fafsaChecklist, setFafsaChecklist] = useState<FafsaChecklist | null>(null);
+
+  useEffect(() => {
+    initializeDashboard();
+  }, []);
+
+  async function initializeDashboard() {
+    try {
+      // Get or create user
+      const userRes = await fetch('/api/user');
+      const { user } = await userRes.json();
+      setUserId(user.id);
+
+      // Check if user has a plan
+      const planRes = await fetch(`/api/plan?userId=${user.id}`);
+      const { plan } = await planRes.json();
+
+      if (!plan) {
+        // Redirect to onboarding
+        router.push('/onboarding');
+        return;
+      }
+
+      // Fetch budget snapshot
+      const snapshotRes = await fetch(`/api/budget-snapshot?userId=${user.id}`);
+      const { snapshot: budgetSnapshot } = await snapshotRes.json();
+      setSnapshot(budgetSnapshot);
+
+      // Fetch FAFSA checklist
+      const fafsaRes = await fetch(`/api/fafsa-checklist?userId=${user.id}`);
+      const { checklist } = await fafsaRes.json();
+      setFafsaChecklist(checklist);
+
+      setLoading(false);
+    } catch (error) {
+      console.error('Error initializing dashboard:', error);
+      showToast('Failed to load dashboard', 'error');
+      setLoading(false);
+    }
+  }
+
+  async function loadDemoData() {
+    if (!userId) return;
+
+    try {
+      setLoading(true);
+      const res = await fetch('/api/seed-demo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (res.ok) {
+        showToast('Demo data loaded successfully!', 'success');
+        // Reload page
+        window.location.reload();
+      } else {
+        showToast('Failed to load demo data', 'error');
+      }
+    } catch (error) {
+      console.error('Error loading demo data:', error);
+      showToast('Failed to load demo data', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function toggleFafsaItem(field: keyof FafsaChecklist) {
+    if (!userId || !fafsaChecklist) return;
+
+    try {
+      const res = await fetch('/api/fafsa-checklist', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          field,
+          value: !fafsaChecklist[field],
+        }),
+      });
+
+      if (res.ok) {
+        const { checklist } = await res.json();
+        setFafsaChecklist(checklist);
+      }
+    } catch (error) {
+      console.error('Error updating FAFSA checklist:', error);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!snapshot) {
+    return null;
+  }
+
+  const statusColor = 
+    snapshot.status === 'ahead' ? 'text-green-600' :
+    snapshot.status === 'behind' ? 'text-red-600' :
+    'text-blue-600';
+
+  const statusText =
+    snapshot.status === 'ahead' ? 'Ahead of Plan' :
+    snapshot.status === 'behind' ? 'Behind Plan' :
+    'On Track';
 
   return (
-    <div>
-      {/* Hero */}
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8 md:py-24">
-        <div className="max-w-2xl">
-          <h1 className="text-4xl font-medium tracking-tight text-foreground md:text-5xl">
-            Build faster, ship sooner
-          </h1>
-          <p className="mt-4 text-base text-muted md:text-lg leading-relaxed">
-            A simple toolkit for teams who want to move quickly without the
-            overhead. Fast setup, clean UI, built for iteration.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <Button variant="primary" href="/contact">
-              Get started
-            </Button>
-            <Button variant="secondary" href="/about">
-              Learn more
-            </Button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-medium text-foreground">Dashboard</h1>
+            <p className="mt-1 text-sm text-muted">Your semester financial overview</p>
           </div>
+          <Button variant="secondary" onClick={loadDemoData}>
+            Load Demo Data
+          </Button>
         </div>
-      </section>
 
-      {/* Features - 3–4 items, asymmetric layout */}
-      <section className="border-t border-border bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8 md:py-24">
-          <div className="max-w-xl">
-            <h2 className="text-2xl font-medium tracking-tight text-foreground md:text-3xl">
-              What you get
-            </h2>
-            <p className="mt-2 text-base text-muted">
-              Focused on the essentials. No bloat.
+        {/* Key Metrics */}
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <h3 className="text-xs font-medium text-muted uppercase tracking-wide">
+              Safe to Spend This Week
+            </h3>
+            <p className="mt-2 text-3xl font-semibold text-foreground">
+              ${snapshot.safeToSpendThisWeek.toFixed(0)}
             </p>
-          </div>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <h3 className="text-sm font-medium text-foreground">
-                Fast setup
-              </h3>
-              <p className="mt-2 text-sm text-muted leading-relaxed">
-                Get running in minutes. No complex config or lengthy onboarding.
-              </p>
-            </Card>
-            <Card>
-              <h3 className="text-sm font-medium text-foreground">
-                Simple integrations
-              </h3>
-              <p className="mt-2 text-sm text-muted leading-relaxed">
-                Connect the tools you already use. APIs and webhooks included.
-              </p>
-            </Card>
-            <Card>
-              <h3 className="text-sm font-medium text-foreground">Clean UI</h3>
-              <p className="mt-2 text-sm text-muted leading-relaxed">
-                Straightforward interface. No clutter, no learning curve.
-              </p>
-            </Card>
-            <Card>
-              <h3 className="text-sm font-medium text-foreground">
-                Built for iteration
-              </h3>
-              <p className="mt-2 text-sm text-muted leading-relaxed">
-                Change things as you go. Designed for early-stage teams.
-              </p>
-            </Card>
-          </div>
+            <p className="mt-1 text-xs text-muted">
+              Based on remaining budget
+            </p>
+          </Card>
+
+          <Card>
+            <h3 className="text-xs font-medium text-muted uppercase tracking-wide">
+              Runway Date
+            </h3>
+            <p className="mt-2 text-2xl font-semibold text-foreground">
+              {snapshot.runwayDate 
+                ? format(new Date(snapshot.runwayDate), 'MMM dd, yyyy')
+                : 'Fully Funded'}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              {snapshot.runwayDate ? 'Funds run out' : 'Through semester end'}
+            </p>
+          </Card>
+
+          <Card>
+            <h3 className="text-xs font-medium text-muted uppercase tracking-wide">
+              Budget Status
+            </h3>
+            <p className={`mt-2 text-2xl font-semibold ${statusColor}`}>
+              {statusText}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              ${Math.abs(snapshot.aheadBehind).toFixed(0)} {snapshot.aheadBehind >= 0 ? 'under' : 'over'}
+            </p>
+          </Card>
+
+          <Card>
+            <h3 className="text-xs font-medium text-muted uppercase tracking-wide">
+              Remaining Funds
+            </h3>
+            <p className="mt-2 text-3xl font-semibold text-foreground">
+              ${snapshot.remainingFundsToday.toFixed(0)}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              Available today
+            </p>
+          </Card>
         </div>
-      </section>
 
-      {/* Pricing - 2 tiers */}
-      <section className="border-t border-border">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8 md:py-24">
-          <div className="max-w-xl">
-            <h2 className="text-2xl font-medium tracking-tight text-foreground md:text-3xl">
-              Simple pricing
-            </h2>
-            <p className="mt-2 text-base text-muted">
-              Two plans. No hidden fees.
-            </p>
-          </div>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:max-w-3xl">
-            <Card className="border-foreground/10">
-              <span className="inline-block rounded-md bg-surface px-2.5 py-0.5 text-xs font-medium text-foreground">
-                Starter
-              </span>
-              <p className="mt-4 text-3xl font-medium text-foreground">$0</p>
-              <p className="mt-1 text-sm text-muted">Free forever</p>
-              <p className="mt-4 text-sm text-muted leading-relaxed">
-                Core features for small teams. Up to 3 members, basic support.
-              </p>
-              <Button variant="secondary" className="mt-6 w-full">
-                Start free
-              </Button>
-            </Card>
-            <Card className="border-accent/30">
-              <span className="inline-block rounded-md bg-accent/20 px-2.5 py-0.5 text-xs font-medium text-foreground">
-                Pro
-              </span>
-              <p className="mt-4 text-3xl font-medium text-foreground">$29</p>
-              <p className="mt-1 text-sm text-muted">Per month</p>
-              <p className="mt-4 text-sm text-muted leading-relaxed">
-                Unlimited members, priority support, advanced integrations.
-              </p>
-              <Button variant="primary" className="mt-6 w-full">
-                Get Pro
-              </Button>
-            </Card>
-          </div>
-        </div>
-      </section>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Upcoming Planned Items */}
+          <Card>
+            <h3 className="text-lg font-medium text-foreground mb-4">
+              Upcoming Planned Items
+            </h3>
+            {snapshot.plannedNext7Days.length > 0 ? (
+              <div className="space-y-3">
+                {snapshot.plannedNext7Days.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between pb-3 border-b border-border last:border-0">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{item.name}</p>
+                      <p className="text-xs text-muted">
+                        {format(new Date(item.date), 'MMM dd, yyyy')}
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">
+                      ${item.amount.toFixed(2)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted">No planned items in the next 7 days</p>
+            )}
+          </Card>
 
-      {/* FAQ - 4 questions, accordion */}
-      <section className="border-t border-border bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8 md:py-24">
-          <div className="max-w-xl">
-            <h2 className="text-2xl font-medium tracking-tight text-foreground md:text-3xl">
-              FAQ
-            </h2>
-            <p className="mt-2 text-base text-muted">
-              Common questions.
-            </p>
-          </div>
-          <div className="mt-12 max-w-2xl">
-            {[
-              {
-                q: "How do I get started?",
-                a: "Sign up with your email. You can start using the free tier immediately. No credit card required.",
-              },
-              {
-                q: "Can I change plans later?",
-                a: "Yes. Upgrade or downgrade anytime. We prorate the difference.",
-              },
-              {
-                q: "What kind of support do you offer?",
-                a: "Free tier includes email support. Pro gets priority response and optional Slack connect.",
-              },
-              {
-                q: "Is there an API?",
-                a: "Yes. REST API and webhooks are available on all plans. Docs are in the dashboard.",
-              },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className="border-b border-border last:border-b-0"
-              >
-                <button
-                  type="button"
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="flex w-full items-center justify-between py-4 text-left text-sm font-medium text-foreground transition-colors duration-150 hover:text-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                  aria-expanded={openFaq === i}
-                  aria-controls={`faq-answer-${i}`}
-                  id={`faq-question-${i}`}
-                >
-                  {item.q}
-                  <span
-                    className={`ml-2 inline-block text-[10px] transition-transform duration-200 ${
-                      openFaq === i ? "rotate-180" : ""
-                    }`}
-                    aria-hidden
-                  >
-                    ▾
-                  </span>
-                </button>
-                <div
-                  id={`faq-answer-${i}`}
-                  role="region"
-                  aria-labelledby={`faq-question-${i}`}
-                  className={`overflow-hidden transition-all duration-200 ${
-                    openFaq === i ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
-                  }`}
-                >
-                  <p className="pb-4 text-sm text-muted leading-relaxed">
-                    {item.a}
+          {/* Top Spending Categories */}
+          <Card>
+            <h3 className="text-lg font-medium text-foreground mb-4">
+              Top Spending (Last 14 Days)
+            </h3>
+            {snapshot.topCategories.length > 0 ? (
+              <div className="space-y-3">
+                {snapshot.topCategories.map((cat, i) => (
+                  <div key={i} className="flex items-center justify-between pb-3 border-b border-border last:border-0">
+                    <p className="text-sm font-medium text-foreground">
+                      {CATEGORY_LABELS[cat.category]}
+                    </p>
+                    <p className="text-sm font-semibold text-foreground">
+                      ${cat.amount.toFixed(2)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted">No transactions yet</p>
+            )}
+          </Card>
+
+          {/* Semester Progress */}
+          <Card>
+            <h3 className="text-lg font-medium text-foreground mb-4">
+              Semester Progress
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-muted">Weeks Elapsed</p>
+                  <p className="text-xs font-medium text-foreground">
+                    {snapshot.weeksElapsed} / {snapshot.weeksTotal}
+                  </p>
+                </div>
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-accent transition-all"
+                    style={{ 
+                      width: `${Math.min(100, (snapshot.weeksElapsed / snapshot.weeksTotal) * 100)}%` 
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div>
+                  <p className="text-xs text-muted">Expected Spend</p>
+                  <p className="text-lg font-semibold text-foreground">
+                    ${snapshot.expectedSpendToDate.toFixed(0)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted">Actual Spend</p>
+                  <p className="text-lg font-semibold text-foreground">
+                    ${snapshot.actualSpendToDate.toFixed(0)}
                   </p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
+          </Card>
 
-      {/* Testimonials - minimal, realistic */}
-      <section className="border-t border-border">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8 md:py-24">
-          <div className="max-w-xl">
-            <h2 className="text-2xl font-medium tracking-tight text-foreground md:text-3xl">
-              What people say
-            </h2>
-            <p className="mt-2 text-base text-muted">
-              From teams like yours.
-            </p>
-          </div>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2">
-            <Card>
-              <p className="text-sm text-foreground leading-relaxed">
-                &ldquo;We were up and running in an afternoon. Exactly what we
-                needed.&rdquo;
-              </p>
-              <p className="mt-4 text-sm text-muted">Sarah, eng lead</p>
-            </Card>
-            <Card>
-              <p className="text-sm text-foreground leading-relaxed">
-                &ldquo;Clean and simple. No fluff. That&apos;s rare.&rdquo;
-              </p>
-              <p className="mt-4 text-sm text-muted">Marcus, founder</p>
-            </Card>
-          </div>
+          {/* FAFSA Checklist */}
+          <Card>
+            <h3 className="text-lg font-medium text-foreground mb-4">
+              FAFSA Readiness Checklist
+            </h3>
+            {fafsaChecklist && (
+              <div className="space-y-2">
+                {[
+                  { key: 'createFsaId', label: 'Create FSA ID' },
+                  { key: 'gatherTaxDocs', label: 'Gather tax documents' },
+                  { key: 'listSchools', label: 'List schools to receive FAFSA' },
+                  { key: 'submitFafsa', label: 'Submit FAFSA form' },
+                  { key: 'verification', label: 'Complete verification (if needed)' },
+                  { key: 'reviewAward', label: 'Review award letter' },
+                  { key: 'acceptAid', label: 'Accept aid package' },
+                  { key: 'markCalendar', label: 'Mark disbursement dates' },
+                ].map(({ key, label }) => (
+                  <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={fafsaChecklist[key as keyof FafsaChecklist]}
+                      onChange={() => toggleFafsaItem(key as keyof FafsaChecklist)}
+                      className="w-4 h-4 text-accent border-border rounded focus:ring-2 focus:ring-accent"
+                    />
+                    <span className="text-sm text-foreground">{label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className="mt-4 pt-4 border-t border-border">
+              <a 
+                href="https://studentaid.gov/h/apply-for-aid/fafsa"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-accent hover:underline"
+              >
+                Learn more about FAFSA →
+              </a>
+            </div>
+          </Card>
         </div>
-      </section>
 
-      {/* CTA */}
-      <section className="border-t border-border bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8 md:py-24">
-          <div className="max-w-xl">
-            <h2 className="text-2xl font-medium tracking-tight text-foreground md:text-3xl">
-              Ready to try it?
-            </h2>
-            <p className="mt-2 text-base text-muted">
-              Start free. No credit card required.
-            </p>
-            <Button variant="primary" href="/contact" className="mt-6">
-              Get started
-            </Button>
-          </div>
+        {/* Quick Actions */}
+        <div className="mt-8 flex flex-wrap gap-4">
+          <Button variant="primary" href="/transactions">
+            Import Transactions
+          </Button>
+          <Button variant="secondary" href="/assistant">
+            Ask MyFO a Question
+          </Button>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

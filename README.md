@@ -43,10 +43,14 @@ bun run preview
 2. Start this frontend: `bun run dev`
 3. Open http://localhost:5173
 
-The home page shows:
-- Health status from `GET /health`
-- Example items from `GET /api/v1/example`
-- A form to create items via `POST /api/v1/example`
+The app includes:
+- **Landing page** (/) with hero section
+- **About page** (/about) placeholder
+- **Navbar** and **Footer** on all pages
+- **Tailwind CSS** for styling
+- **React Router** for navigation
+
+When the backend is running, you can add API calls (e.g. `GET /health`, `GET /api/v1/example`) to any page.
 
 ## Troubleshooting
 

@@ -1,670 +1,298 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import AnimatedNumber from "@/components/ui/AnimatedNumber";
-import CircularProgress from "@/components/ui/CircularProgress";
-import { BudgetSnapshot, FinancialHealth } from "@/lib/types";
-import { CATEGORY_LABELS } from "@/lib/constants";
-import { format } from "date-fns";
-import { useToast } from "@/components/ui/Toast";
 
-interface FafsaChecklist {
-  createFsaId: boolean;
-  gatherTaxDocs: boolean;
-  listSchools: boolean;
-  submitFafsa: boolean;
-  verification: boolean;
-  reviewAward: boolean;
-  acceptAid: boolean;
-  markCalendar: boolean;
-}
-
-export default function Dashboard() {
+export default function Home() {
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [chatInput, setChatInput] = useState("");
   const router = useRouter();
-  const { showToast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [snapshot, setSnapshot] = useState<BudgetSnapshot | null>(null);
-  const [fafsaChecklist, setFafsaChecklist] = useState<FafsaChecklist | null>(null);
-  const [financialHealth, setFinancialHealth] = useState<FinancialHealth | null>(null);
 
-  useEffect(() => {
-    initializeDashboard();
-  }, []);
-
-  async function initializeDashboard() {
-    try {
-      const userRes = await fetch('/api/user');
-      const { user } = await userRes.json();
-      setUserId(user.id);
-
-      const planRes = await fetch(`/api/plan?userId=${user.id}`);
-      const { plan } = await planRes.json();
-
-      if (!plan) {
-        router.push('/onboarding');
-        return;
-      }
-
-      const [snapshotRes, fafsaRes, healthRes] = await Promise.all([
-        fetch(`/api/budget-snapshot?userId=${user.id}`),
-        fetch(`/api/fafsa-checklist?userId=${user.id}`),
-        fetch(`/api/financial-health?userId=${user.id}`),
-      ]);
-
-      const { snapshot: budgetSnapshot } = await snapshotRes.json();
-      setSnapshot(budgetSnapshot);
-
-      const { checklist } = await fafsaRes.json();
-      setFafsaChecklist(checklist);
-
-      const healthData = await healthRes.json();
-      if (healthData.financialHealth) {
-        setFinancialHealth(healthData.financialHealth);
-      }
-
-      setLoading(false);
-    } catch (error) {
-      console.error('Error initializing dashboard:', error);
-      showToast('Failed to load dashboard', 'error');
-      setLoading(false);
+  const handleChatSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (chatInput.trim()) {
+      router.push(`/assistant?q=${encodeURIComponent(chatInput)}`);
+    } else {
+      router.push("/assistant");
     }
-  }
-
-  async function loadDemoData() {
-    if (!userId) return;
-
-    try {
-      setLoading(true);
-      const res = await fetch('/api/seed-demo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-      });
-
-      if (res.ok) {
-        showToast('Demo data loaded successfully!', 'success');
-        window.location.reload();
-      } else {
-        showToast('Failed to load demo data', 'error');
-      }
-    } catch (error) {
-      console.error('Error loading demo data:', error);
-      showToast('Failed to load demo data', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function toggleFafsaItem(field: keyof FafsaChecklist) {
-    if (!userId || !fafsaChecklist) return;
-
-    try {
-      const res = await fetch('/api/fafsa-checklist', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          field,
-          value: !fafsaChecklist[field],
-        }),
-      });
-
-      if (res.ok) {
-        const { checklist } = await res.json();
-        setFafsaChecklist(checklist);
-      }
-    } catch (error) {
-      console.error('Error updating FAFSA checklist:', error);
-    }
-  }
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', border: '4px solid #e0e7ff', borderTopColor: '#6366f1', animation: 'spin 1s linear infinite' }} />
-          <p style={{ color: '#4b5563', fontWeight: 500 }}>Loading your finances...</p>
-        </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
-
-  if (!snapshot) {
-    return null;
-  }
-
-  const statusColor =
-    snapshot.status === 'ahead' ? '#059669' :
-      snapshot.status === 'behind' ? '#dc2626' :
-        '#4f46e5';
-
-  const statusBg =
-    snapshot.status === 'ahead' ? 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)' :
-      snapshot.status === 'behind' ? 'linear-gradient(135deg, #ef4444 0%, #f43f5e 100%)' :
-        'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
-
-  const statusText =
-    snapshot.status === 'ahead' ? 'Ahead of Plan' :
-      snapshot.status === 'behind' ? 'Behind Plan' :
-        'On Track';
-
-  const progressPercentage = Math.min(100, (snapshot.weeksElapsed / snapshot.weeksTotal) * 100);
-  const totalSpending = snapshot.topCategories.reduce((sum, cat) => sum + cat.amount, 0);
-
-  const cardStyle: React.CSSProperties = {
-    padding: '1.5rem',
-    backgroundColor: 'white',
-    borderRadius: '1rem',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-    border: '1px solid #f3f4f6'
   };
 
-  const gradientColors = [
-    'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-    'linear-gradient(135deg, #10b981 0%, #0d9488 100%)',
-    'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)',
-    'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
-    'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',
-  ];
-
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #eef2ff 0%, #ffffff 50%, #faf5ff 100%)' }}>
-      <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1rem' }}>
-        {/* Header */}
-        <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>Dashboard</h1>
-            <p style={{ marginTop: '0.5rem', color: '#6b7280' }}>Your semester financial overview</p>
-          </div>
-          <button
-            onClick={loadDemoData}
+    <div>
+      {/* Hero with Chatbot Widget */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div 
+            className="relative rounded-[3rem] overflow-hidden"
             style={{
-              padding: '0.75rem 1.5rem',
-              borderRadius: '0.75rem',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              color: 'white',
-              fontWeight: 600,
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 4px 6px rgba(99, 102, 241, 0.25)'
+              backgroundImage: 'url(/campus-background.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
             }}
           >
-            Load Demo Data
-          </button>
-        </div>
-
-        {/* Hero Metric - Safe to Spend */}
-        <div style={{ ...cardStyle, marginBottom: '2rem', textAlign: 'center', padding: '2.5rem' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.375rem 1rem',
-            borderRadius: '9999px',
-            backgroundColor: '#eef2ff',
-            color: '#4f46e5',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            marginBottom: '1rem'
-          }}>
-            <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', backgroundColor: '#6366f1', animation: 'pulse 2s infinite' }} />
-            Safe to Spend This Week
-          </div>
-          <div style={{ fontSize: '3.75rem', fontWeight: 700, color: '#111827', marginBottom: '0.5rem' }}>
-            <AnimatedNumber value={snapshot.safeToSpendThisWeek} prefix="$" decimals={0} />
-          </div>
-          <p style={{ color: '#6b7280' }}>Based on your remaining budget and planned expenses</p>
-        </div>
-
-        {/* Key Metrics Grid */}
-        <div style={{ marginBottom: '2rem', display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-          {/* Runway Date */}
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-              <div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Runway Date
-                </span>
-                <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>
-                  {snapshot.runwayDate
-                    ? format(new Date(snapshot.runwayDate), 'MMM dd, yyyy')
-                    : 'Fully Funded'}
-                </p>
-                <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                  {snapshot.runwayDate ? 'When funds run out' : 'Through semester end'}
-                </p>
-              </div>
-              <div style={{
-                width: '3rem',
-                height: '3rem',
-                borderRadius: '0.75rem',
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <svg style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Budget Status */}
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-              <div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Budget Status
-                </span>
-                <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', fontWeight: 700, color: statusColor }}>
-                  {statusText}
-                </p>
-                <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                  <AnimatedNumber
-                    value={Math.abs(snapshot.aheadBehind)}
-                    prefix="$"
-                    decimals={0}
-                  /> {snapshot.aheadBehind >= 0 ? 'under budget' : 'over budget'}
-                </p>
-              </div>
-              <div style={{
-                width: '3rem',
-                height: '3rem',
-                borderRadius: '0.75rem',
-                background: statusBg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <svg style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Remaining Funds */}
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-              <div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Remaining Funds
-                </span>
-                <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>
-                  <AnimatedNumber value={snapshot.remainingFundsToday} prefix="$" decimals={0} />
-                </p>
-                <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                  Available today
-                </p>
-              </div>
-              <div style={{
-                width: '3rem',
-                height: '3rem',
-                borderRadius: '0.75rem',
-                background: 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <svg style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Financial Health Summary */}
-        {financialHealth && (
-          <div style={{ ...cardStyle, marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{
-                  width: '2rem',
-                  height: '2rem',
-                  borderRadius: '0.5rem',
-                  background: financialHealth.healthLevel === 'excellent' ? 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)' :
-                    financialHealth.healthLevel === 'good' ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' :
-                      financialHealth.healthLevel === 'fair' ? 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)' :
-                        'linear-gradient(135deg, #ef4444 0%, #f43f5e 100%)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '0.75rem',
-                  fontWeight: 700
-                }}>
-                  {financialHealth.healthScore}
-                </span>
-                Financial Health
-              </h3>
-              <a href="/income" style={{ fontSize: '0.875rem', color: '#6366f1', fontWeight: 500, textDecoration: 'none' }}>
-                Manage Income →
-              </a>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-              {/* Cash Flow */}
-              <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.75rem' }}>
-                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Weekly Cash Flow</p>
-                <p style={{
-                  fontSize: '1.25rem',
-                  fontWeight: 700,
-                  color: financialHealth.netWeeklyCashFlow >= 0 ? '#10b981' : '#ef4444'
-                }}>
-                  {financialHealth.netWeeklyCashFlow >= 0 ? '+' : ''}${financialHealth.netWeeklyCashFlow.toFixed(0)}/week
-                </p>
-              </div>
-              {/* Emergency Fund */}
-              {financialHealth.emergencyFund && (
-                <div style={{ padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: '0.75rem' }}>
-                  <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Emergency Fund</p>
-                  <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#10b981' }}>
-                    {financialHealth.emergencyFund.percentComplete.toFixed(0)}% funded
+            {/* Overlay for better text readability */}
+            <div className="absolute inset-0 bg-white/30 backdrop-blur-[2px]" />
+            
+            <div className="relative z-10 px-8 py-24 sm:px-12 lg:px-16 md:py-32 lg:py-40">
+              <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
+                {/* Left side - Content */}
+                <div>
+                  <h1 className="text-5xl font-medium tracking-tight text-gray-900 md:text-6xl lg:text-7xl leading-tight drop-shadow-sm">
+                    Plan, track, and stay in control of your student finances
+                  </h1>
+                  <p className="mt-6 text-lg md:text-xl text-gray-900 leading-relaxed drop-shadow-sm">
+                    AI-powered semester budgeting that answers "can I afford this?" with smart tradeoff analysis and personalized coaching for college students.
                   </p>
-                </div>
-              )}
-              {/* Loan Status */}
-              {financialHealth.loanRepaymentProjection && (
-                <div style={{ padding: '1rem', backgroundColor: '#fef2f2', borderRadius: '0.75rem' }}>
-                  <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Loans This Semester</p>
-                  <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ef4444' }}>
-                    ${financialHealth.loanRepaymentProjection.totalLoanAmount.toFixed(0)}
-                  </p>
-                </div>
-              )}
-            </div>
-            {/* Loan Projection Message */}
-            {financialHealth.loanRepaymentProjection && (
-              <div style={{
-                marginTop: '1rem',
-                padding: '0.75rem 1rem',
-                backgroundColor: '#eef2ff',
-                borderRadius: '0.5rem',
-                borderLeft: '3px solid #6366f1'
-              }}>
-                <p style={{ fontSize: '0.875rem', color: '#374151', lineHeight: 1.5 }}>
-                  {financialHealth.loanRepaymentProjection.message}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
-          {/* Semester Progress with Circular */}
-          <div style={cardStyle}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1.5rem' }}>
-              Semester Progress
-            </h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-              <CircularProgress
-                percentage={progressPercentage}
-                size={140}
-                strokeWidth={10}
-                label="complete"
-              />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Weeks Elapsed</span>
-                  <span style={{ fontWeight: 600, color: '#111827' }}>
-                    {snapshot.weeksElapsed} / {snapshot.weeksTotal}
-                  </span>
-                </div>
-                <div style={{ height: '1px', backgroundColor: '#e5e7eb', marginBottom: '1rem' }} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Expected Spend</p>
-                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#4f46e5' }}>
-                      <AnimatedNumber value={snapshot.expectedSpendToDate} prefix="$" decimals={0} />
-                    </p>
-                  </div>
-                  <div>
-                    <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Actual Spend</p>
-                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#111827' }}>
-                      <AnimatedNumber value={snapshot.actualSpendToDate} prefix="$" decimals={0} />
-                    </p>
+                  <div className="mt-8 flex flex-wrap gap-4 items-center">
+                    <Button variant="primary" href="/onboarding">
+                      Get started
+                    </Button>
+                    <a 
+                      href="#how-it-works" 
+                      className="text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors inline-flex items-center gap-1 drop-shadow-sm"
+                    >
+                      Learn more
+                      <span className="text-xs">→</span>
+                    </a>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Top Spending Categories */}
-          <div style={cardStyle}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
-              Top Spending (Last 14 Days)
-            </h3>
-            {snapshot.topCategories.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {snapshot.topCategories.slice(0, 5).map((cat, i) => {
-                  const percentage = totalSpending > 0 ? (cat.amount / totalSpending) * 100 : 0;
-                  return (
-                    <div key={i}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                        <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
-                          {CATEGORY_LABELS[cat.category]}
-                        </span>
-                        <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#111827' }}>
-                          ${cat.amount.toFixed(0)}
-                        </span>
+                {/* Right side - Chatbot Widget with Glassmorphism */}
+                <div className="lg:ml-auto lg:max-w-lg w-full">
+                  <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/50 p-8 shadow-xl">
+                    <div className="mb-6">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent/20 backdrop-blur-sm flex items-center justify-center">
+                          <span className="text-accent text-sm font-medium">M</span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-base text-gray-900 font-medium">MyFO Assistant</p>
+                          <p className="mt-2 text-sm text-gray-800 leading-relaxed">
+                            What finances do you need help with today?
+                          </p>
+                        </div>
                       </div>
-                      <div style={{ height: '0.5rem', backgroundColor: '#e5e7eb', borderRadius: '9999px', overflow: 'hidden' }}>
-                        <div
-                          style={{
-                            height: '100%',
-                            background: gradientColors[i % gradientColors.length],
-                            borderRadius: '9999px',
-                            transition: 'width 0.7s ease',
-                            width: `${percentage}%`
-                          }}
+                    </div>
+
+                    <form onSubmit={handleChatSubmit} className="space-y-4">
+                      <div>
+                        <textarea
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          placeholder="Ask about budgeting, spending, or any financial question..."
+                          rows={4}
+                          className="w-full rounded-lg border border-white/60 bg-white/60 backdrop-blur-sm px-4 py-3 text-sm text-gray-900 placeholder:text-gray-600 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none"
                         />
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-                <div style={{ width: '4rem', height: '4rem', margin: '0 auto 1rem', borderRadius: '50%', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg style={{ width: '2rem', height: '2rem', color: '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                  </svg>
-                </div>
-                <p style={{ color: '#4b5563' }}>No transactions yet</p>
-                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>Import your bank CSV to get started</p>
-              </div>
-            )}
-          </div>
+                      <button
+                        type="submit"
+                        className="w-full rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white hover:bg-accent/90 transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 shadow-lg"
+                      >
+                        Get answers →
+                      </button>
+                    </form>
 
-          {/* Upcoming Planned Items */}
-          <div style={cardStyle}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
-              Upcoming Planned Items
-            </h3>
-            {snapshot.plannedNext7Days.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {snapshot.plannedNext7Days.map((item, i) => (
-                  <div
-                    key={i}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', borderRadius: '0.75rem', backgroundColor: '#f9fafb' }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div style={{
-                        width: '2.5rem',
-                        height: '2.5rem',
-                        borderRadius: '0.5rem',
-                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontWeight: 700,
-                        fontSize: '0.875rem'
-                      }}>
-                        {format(new Date(item.date), 'dd')}
-                      </div>
-                      <div>
-                        <p style={{ fontWeight: 500, color: '#111827' }}>{item.name}</p>
-                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                          {format(new Date(item.date), 'EEEE, MMM dd')}
-                        </p>
-                      </div>
-                    </div>
-                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#4f46e5' }}>
-                      ${item.amount.toFixed(0)}
+                    <p className="mt-4 text-xs text-gray-700 text-center">
+                      Try the interactive demo
                     </p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-                <div style={{ width: '4rem', height: '4rem', margin: '0 auto 1rem', borderRadius: '50%', backgroundColor: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg style={{ width: '2rem', height: '2rem', color: '#059669' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
                 </div>
-                <p style={{ color: '#4b5563' }}>No planned items in the next 7 days</p>
               </div>
-            )}
+            </div>
           </div>
+        </div>
+      </section>
 
-          {/* FAFSA Checklist */}
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827' }}>
-                FAFSA Readiness
+      {/* Features */}
+      <section className="border-t border-gray-200 bg-gray-50">
+        <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 md:py-32">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-medium tracking-tight text-gray-900 md:text-4xl">
+              Financial clarity for students
+            </h2>
+            <p className="mt-4 text-lg text-gray-600">
+              Everything you need to stay on track this semester.
+            </p>
+          </div>
+          <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <h3 className="text-base font-medium text-gray-900">
+                Smart semester planning
               </h3>
-              <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '9999px', backgroundColor: '#eef2ff', color: '#4f46e5', fontWeight: 500 }}>
-                {fafsaChecklist ? Object.values(fafsaChecklist).filter(Boolean).length : 0}/8 Complete
-              </span>
-            </div>
-            {fafsaChecklist && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {[
-                  { key: 'createFsaId', label: 'Create FSA ID' },
-                  { key: 'gatherTaxDocs', label: 'Gather tax documents' },
-                  { key: 'listSchools', label: 'List schools to receive FAFSA' },
-                  { key: 'submitFafsa', label: 'Submit FAFSA form' },
-                  { key: 'verification', label: 'Complete verification' },
-                  { key: 'reviewAward', label: 'Review award letter' },
-                  { key: 'acceptAid', label: 'Accept aid package' },
-                  { key: 'markCalendar', label: 'Mark disbursement dates' },
-                ].map(({ key, label }) => {
-                  const isChecked = fafsaChecklist[key as keyof FafsaChecklist];
-                  return (
-                    <label
-                      key={key}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
-                        padding: '0.75rem',
-                        borderRadius: '0.75rem',
-                        cursor: 'pointer',
-                        backgroundColor: isChecked ? '#ecfdf5' : '#f9fafb',
-                        border: isChecked ? '1px solid #a7f3d0' : '1px solid transparent'
-                      }}
-                    >
-                      <div style={{
-                        width: '1.25rem',
-                        height: '1.25rem',
-                        borderRadius: '0.375rem',
-                        border: isChecked ? 'none' : '2px solid #d1d5db',
-                        backgroundColor: isChecked ? '#10b981' : 'transparent',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        {isChecked && (
-                          <svg style={{ width: '0.75rem', height: '0.75rem', color: 'white' }} fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleFafsaItem(key as keyof FafsaChecklist)}
-                        style={{ display: 'none' }}
-                      />
-                      <span style={{
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                        color: isChecked ? '#047857' : '#374151',
-                        textDecoration: isChecked ? 'line-through' : 'none'
-                      }}>
-                        {label}
-                      </span>
-                    </label>
-                  );
-                })}
+              <p className="mt-3 text-base text-gray-600 leading-relaxed">
+                Builds a plan to stretch your financial aid, loan disbursements, 
+                and student worker income across the entire semester. Know exactly 
+                how much you have each month.
+              </p>
+            </Card>
+            <Card>
+              <h3 className="text-base font-medium text-gray-900">
+                "Can I afford this?" answers
+              </h3>
+              <p className="mt-3 text-base text-gray-600 leading-relaxed">
+                Get real tradeoff analysis, not just yes/no. See how purchases 
+                impact your runway and discover opportunities to earn extra cash 
+                when you need it.
+              </p>
+            </Card>
+            <Card>
+              <h3 className="text-base font-medium text-gray-900">
+                Proactive support
+              </h3>
+              <p className="mt-3 text-base text-gray-600 leading-relaxed">
+                Receive timely reminders, overspend alerts, and personalized 
+                suggestions for side gigs and scholarships you should apply to.
+              </p>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section id="how-it-works" className="border-t border-gray-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 md:py-32">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-medium tracking-tight text-gray-900 md:text-4xl">
+              How it works
+            </h2>
+            <p className="mt-4 text-lg text-gray-600">
+              Simple setup, powerful insights.
+            </p>
+          </div>
+          <div className="mt-16 grid gap-12 sm:grid-cols-3">
+            <div>
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-accent/10 text-accent font-medium">
+                1
               </div>
-            )}
-            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
-              <a
-                href="https://studentaid.gov/h/apply-for-aid/fafsa"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#4f46e5', fontWeight: 500, textDecoration: 'none' }}
-              >
-                Learn more about FAFSA
-                <svg style={{ width: '1rem', height: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
+              <h3 className="mt-6 text-lg font-medium text-gray-900">
+                Set up your semester
+              </h3>
+              <p className="mt-3 text-base text-gray-600 leading-relaxed">
+                Tell us about your financial aid, income, and planned expenses. 
+                Takes just a few minutes.
+              </p>
+            </div>
+            <div>
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-accent/10 text-accent font-medium">
+                2
+              </div>
+              <h3 className="mt-6 text-lg font-medium text-gray-900">
+                Track your spending
+              </h3>
+              <p className="mt-3 text-base text-gray-600 leading-relaxed">
+                Import transactions or log purchases manually. MyFO categorizes 
+                and tracks everything automatically.
+              </p>
+            </div>
+            <div>
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-accent/10 text-accent font-medium">
+                3
+              </div>
+              <h3 className="mt-6 text-lg font-medium text-gray-900">
+                Stay on track
+              </h3>
+              <p className="mt-3 text-base text-gray-600 leading-relaxed">
+                Ask questions, get alerts, and receive personalized financial 
+                coaching powered by AI.
+              </p>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Quick Actions */}
-        <div style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-          <a
-            href="/transactions"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '0.75rem',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              color: 'white',
-              fontWeight: 600,
-              textDecoration: 'none',
-              boxShadow: '0 4px 6px rgba(99, 102, 241, 0.25)'
-            }}
-          >
-            <svg style={{ width: '1.25rem', height: '1.25rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            Import Transactions
-          </a>
-          <a
-            href="/assistant"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '0.75rem',
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb',
-              color: '#374151',
-              fontWeight: 600,
-              textDecoration: 'none'
-            }}
-          >
-            <svg style={{ width: '1.25rem', height: '1.25rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
-            Ask MyFO a Question
-          </a>
+      {/* FAQ */}
+      <section className="border-t border-gray-200 bg-gray-50">
+        <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 md:py-32">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-medium tracking-tight text-gray-900 md:text-4xl">
+              FAQ
+            </h2>
+            <p className="mt-4 text-lg text-gray-600">
+              Common questions from students.
+            </p>
+          </div>
+          <div className="mt-16 max-w-3xl">
+            {[
+              {
+                q: "How does MyFO help me budget my semester?",
+                a: "MyFO takes your financial aid disbursements, student worker income, and planned expenses to create a week-by-week spending plan. You'll always know your 'safe to spend' amount and when your money might run out.",
+              },
+              {
+                q: "What does 'can I afford this?' actually show me?",
+                a: "Instead of just yes or no, MyFO shows you the tradeoffs. You'll see how a purchase impacts your runway, what you might need to cut back on, or ways to earn extra to cover it without stress.",
+              },
+              {
+                q: "Is my financial information secure?",
+                a: "Absolutely. We use bank-level encryption and never sell your data. Your financial information is private and protected.",
+              },
+              {
+                q: "How do I import my transactions?",
+                a: "You can upload a CSV from your bank or manually log purchases. MyFO automatically categorizes transactions and updates your budget in real-time.",
+              },
+              {
+                q: "What kind of proactive help does MyFO provide?",
+                a: "MyFO sends reminders for planned expenses, alerts you when you're overspending in a category, and suggests relevant scholarships or side gigs when you need extra income.",
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="border-b border-gray-200 last:border-b-0"
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="flex w-full items-center justify-between py-6 text-left text-base font-medium text-gray-900 transition-colors duration-150 hover:text-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  aria-expanded={openFaq === i}
+                  aria-controls={`faq-answer-${i}`}
+                  id={`faq-question-${i}`}
+                >
+                  {item.q}
+                  <span
+                    className={`ml-2 inline-block text-xs transition-transform duration-200 ${
+                      openFaq === i ? "rotate-180" : ""
+                    }`}
+                    aria-hidden
+                  >
+                    ▾
+                  </span>
+                </button>
+                <div
+                  id={`faq-answer-${i}`}
+                  role="region"
+                  aria-labelledby={`faq-question-${i}`}
+                  className={`overflow-hidden transition-all duration-200 ${
+                    openFaq === i ? "max-h-48 opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <p className="pb-6 text-base text-gray-600 leading-relaxed">
+                    {item.a}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }`}</style>
+      </section>
+
+      {/* CTA */}
+      <section className="border-t border-gray-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 md:py-32">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-medium tracking-tight text-gray-900 md:text-4xl">
+              Ready to take control of your finances?
+            </h2>
+            <p className="mt-4 text-lg text-gray-600">
+              Start planning your semester budget today. Free to use.
+            </p>
+            <Button variant="primary" href="/onboarding" className="mt-8">
+              Get started
+            </Button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

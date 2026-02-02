@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navLinks = [
-  { href: "/", label: "Dashboard", end: true },
+  { href: "/", label: "Home", end: true },
+  { href: "/dashboard", label: "Dashboard", end: false },
   { href: "/income", label: "Income", end: false },
   { href: "/transactions", label: "Transactions", end: false },
   { href: "/assistant", label: "Ask MyFO", end: false },
@@ -88,9 +89,9 @@ export default function Navbar() {
                     textDecoration: 'none',
                     transition: 'all 0.2s',
                     ...(isActive ? {
-                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      background: 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)',
                       color: 'white',
-                      boxShadow: '0 4px 6px rgba(99, 102, 241, 0.25)'
+                      boxShadow: '0 4px 6px rgba(16, 185, 129, 0.25)'
                     } : {
                       color: '#4b5563',
                       backgroundColor: 'transparent'

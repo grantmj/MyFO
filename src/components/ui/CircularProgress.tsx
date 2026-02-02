@@ -47,9 +47,9 @@ export default function CircularProgress({
                 {/* Gradient definition */}
                 <defs>
                     <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#667eea" />
-                        <stop offset="50%" stopColor="#764ba2" />
-                        <stop offset="100%" stopColor="#11998e" />
+                        <stop offset="0%" stopColor="#14b8a6" />
+                        <stop offset="50%" stopColor="#0d9488" />
+                        <stop offset="100%" stopColor="#10b981" />
                     </linearGradient>
                 </defs>
 

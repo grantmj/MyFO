@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import { BudgetSnapshot } from "@/lib/types";
+import AnimatedNumber from "@/components/ui/AnimatedNumber";
+import CircularProgress from "@/components/ui/CircularProgress";
+import { BudgetSnapshot, FinancialHealth } from "@/lib/types";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/Toast";
@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [userId, setUserId] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<BudgetSnapshot | null>(null);
   const [fafsaChecklist, setFafsaChecklist] = useState<FafsaChecklist | null>(null);
+  const [financialHealth, setFinancialHealth] = useState<FinancialHealth | null>(null);
 
   useEffect(() => {
     initializeDashboard();
@@ -34,30 +35,34 @@ export default function Dashboard() {
 
   async function initializeDashboard() {
     try {
-      // Get or create user
       const userRes = await fetch('/api/user');
       const { user } = await userRes.json();
       setUserId(user.id);
 
-      // Check if user has a plan
       const planRes = await fetch(`/api/plan?userId=${user.id}`);
       const { plan } = await planRes.json();
 
       if (!plan) {
-        // Redirect to onboarding
         router.push('/onboarding');
         return;
       }
 
-      // Fetch budget snapshot
-      const snapshotRes = await fetch(`/api/budget-snapshot?userId=${user.id}`);
+      const [snapshotRes, fafsaRes, healthRes] = await Promise.all([
+        fetch(`/api/budget-snapshot?userId=${user.id}`),
+        fetch(`/api/fafsa-checklist?userId=${user.id}`),
+        fetch(`/api/financial-health?userId=${user.id}`),
+      ]);
+
       const { snapshot: budgetSnapshot } = await snapshotRes.json();
       setSnapshot(budgetSnapshot);
 
-      // Fetch FAFSA checklist
-      const fafsaRes = await fetch(`/api/fafsa-checklist?userId=${user.id}`);
       const { checklist } = await fafsaRes.json();
       setFafsaChecklist(checklist);
+
+      const healthData = await healthRes.json();
+      if (healthData.financialHealth) {
+        setFinancialHealth(healthData.financialHealth);
+      }
 
       setLoading(false);
     } catch (error) {
@@ -80,7 +85,6 @@ export default function Dashboard() {
 
       if (res.ok) {
         showToast('Demo data loaded successfully!', 'success');
-        // Reload page
         window.location.reload();
       } else {
         showToast('Failed to load demo data', 'error');
@@ -118,8 +122,12 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted">Loading...</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', border: '4px solid #e5e7eb', borderTopColor: '#14b8a6', animation: 'spin 1s linear infinite' }} />
+          <p style={{ color: '#4b5563', fontWeight: 500 }}>Loading your finances...</p>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -128,224 +136,535 @@ export default function Dashboard() {
     return null;
   }
 
-  const statusColor = 
-    snapshot.status === 'ahead' ? 'text-green-600' :
-    snapshot.status === 'behind' ? 'text-red-600' :
-    'text-blue-600';
+  const statusColor =
+    snapshot.status === 'ahead' ? '#059669' :
+      snapshot.status === 'behind' ? '#dc2626' :
+        '#14b8a6';
+
+  const statusBg =
+    snapshot.status === 'ahead' ? '#10b981' :
+      snapshot.status === 'behind' ? '#ef4444' :
+        '#14b8a6';
 
   const statusText =
     snapshot.status === 'ahead' ? 'Ahead of Plan' :
-    snapshot.status === 'behind' ? 'Behind Plan' :
-    'On Track';
+      snapshot.status === 'behind' ? 'Behind Plan' :
+        'On Track';
+
+  const progressPercentage = Math.min(100, (snapshot.weeksElapsed / snapshot.weeksTotal) * 100);
+  const totalSpending = snapshot.topCategories.reduce((sum, cat) => sum + cat.amount, 0);
+
+  const cardStyle: React.CSSProperties = {
+    padding: '1.5rem',
+    backgroundColor: 'white',
+    borderRadius: '1rem',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    border: '1px solid #f3f4f6'
+  };
+
+  const gradientColors = [
+    '#14b8a6',
+    '#10b981',
+    '#f59e0b',
+    '#f97316',
+    '#06b6d4',
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
+      <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1rem' }}>
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 className="text-3xl font-medium text-foreground">Dashboard</h1>
-            <p className="mt-1 text-sm text-muted">Your semester financial overview</p>
+            <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>Dashboard</h1>
+            <p style={{ marginTop: '0.5rem', color: '#6b7280' }}>Your semester financial overview</p>
           </div>
-          <Button variant="secondary" onClick={loadDemoData}>
+          <button
+            onClick={loadDemoData}
+            style={{
+              padding: '0.75rem 1.5rem',
+              borderRadius: '0.75rem',
+              background: '#14b8a6',
+              color: 'white',
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 6px rgba(20, 184, 166, 0.25)'
+            }}
+          >
             Load Demo Data
-          </Button>
+          </button>
         </div>
 
-        {/* Key Metrics */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <h3 className="text-xs font-medium text-muted uppercase tracking-wide">
-              Safe to Spend This Week
-            </h3>
-            <p className="mt-2 text-3xl font-semibold text-foreground">
-              ${snapshot.safeToSpendThisWeek.toFixed(0)}
-            </p>
-            <p className="mt-1 text-xs text-muted">
-              Based on remaining budget
-            </p>
-          </Card>
-
-          <Card>
-            <h3 className="text-xs font-medium text-muted uppercase tracking-wide">
-              Runway Date
-            </h3>
-            <p className="mt-2 text-2xl font-semibold text-foreground">
-              {snapshot.runwayDate 
-                ? format(new Date(snapshot.runwayDate), 'MMM dd, yyyy')
-                : 'Fully Funded'}
-            </p>
-            <p className="mt-1 text-xs text-muted">
-              {snapshot.runwayDate ? 'Funds run out' : 'Through semester end'}
-            </p>
-          </Card>
-
-          <Card>
-            <h3 className="text-xs font-medium text-muted uppercase tracking-wide">
-              Budget Status
-            </h3>
-            <p className={`mt-2 text-2xl font-semibold ${statusColor}`}>
-              {statusText}
-            </p>
-            <p className="mt-1 text-xs text-muted">
-              ${Math.abs(snapshot.aheadBehind).toFixed(0)} {snapshot.aheadBehind >= 0 ? 'under' : 'over'}
-            </p>
-          </Card>
-
-          <Card>
-            <h3 className="text-xs font-medium text-muted uppercase tracking-wide">
-              Remaining Funds
-            </h3>
-            <p className="mt-2 text-3xl font-semibold text-foreground">
-              ${snapshot.remainingFundsToday.toFixed(0)}
-            </p>
-            <p className="mt-1 text-xs text-muted">
-              Available today
-            </p>
-          </Card>
+        {/* Hero Metric - Safe to Spend */}
+        <div style={{ ...cardStyle, marginBottom: '2rem', textAlign: 'center', padding: '2.5rem' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.375rem 1rem',
+            borderRadius: '9999px',
+            backgroundColor: '#ccfbf1',
+            color: '#0f766e',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            marginBottom: '1rem'
+          }}>
+            <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', backgroundColor: '#14b8a6', animation: 'pulse 2s infinite' }} />
+            Safe to Spend This Week
+          </div>
+          <div style={{ fontSize: '3.75rem', fontWeight: 700, color: '#111827', marginBottom: '0.5rem' }}>
+            <AnimatedNumber value={snapshot.safeToSpendThisWeek} prefix="$" decimals={0} />
+          </div>
+          <p style={{ color: '#6b7280' }}>Based on your remaining budget and planned expenses</p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Upcoming Planned Items */}
-          <Card>
-            <h3 className="text-lg font-medium text-foreground mb-4">
-              Upcoming Planned Items
-            </h3>
-            {snapshot.plannedNext7Days.length > 0 ? (
-              <div className="space-y-3">
-                {snapshot.plannedNext7Days.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between pb-3 border-b border-border last:border-0">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{item.name}</p>
-                      <p className="text-xs text-muted">
-                        {format(new Date(item.date), 'MMM dd, yyyy')}
-                      </p>
-                    </div>
-                    <p className="text-sm font-semibold text-foreground">
-                      ${item.amount.toFixed(2)}
-                    </p>
-                  </div>
-                ))}
+        {/* Key Metrics Grid */}
+        <div style={{ marginBottom: '2rem', display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+          {/* Runway Date */}
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Runway Date
+                </span>
+                <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>
+                  {snapshot.runwayDate
+                    ? format(new Date(snapshot.runwayDate), 'MMM dd, yyyy')
+                    : 'Fully Funded'}
+                </p>
+                <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                  {snapshot.runwayDate ? 'When funds run out' : 'Through semester end'}
+                </p>
               </div>
-            ) : (
-              <p className="text-sm text-muted">No planned items in the next 7 days</p>
-            )}
-          </Card>
-
-          {/* Top Spending Categories */}
-          <Card>
-            <h3 className="text-lg font-medium text-foreground mb-4">
-              Top Spending (Last 14 Days)
-            </h3>
-            {snapshot.topCategories.length > 0 ? (
-              <div className="space-y-3">
-                {snapshot.topCategories.map((cat, i) => (
-                  <div key={i} className="flex items-center justify-between pb-3 border-b border-border last:border-0">
-                    <p className="text-sm font-medium text-foreground">
-                      {CATEGORY_LABELS[cat.category]}
-                    </p>
-                    <p className="text-sm font-semibold text-foreground">
-                      ${cat.amount.toFixed(2)}
-                    </p>
-                  </div>
-                ))}
+              <div style={{
+                width: '3rem',
+                height: '3rem',
+                borderRadius: '0.75rem',
+                background: '#14b8a6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <svg style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
               </div>
-            ) : (
-              <p className="text-sm text-muted">No transactions yet</p>
-            )}
-          </Card>
+            </div>
+          </div>
 
-          {/* Semester Progress */}
-          <Card>
-            <h3 className="text-lg font-medium text-foreground mb-4">
+          {/* Budget Status */}
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Budget Status
+                </span>
+                <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', fontWeight: 700, color: statusColor }}>
+                  {statusText}
+                </p>
+                <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                  <AnimatedNumber
+                    value={Math.abs(snapshot.aheadBehind)}
+                    prefix="$"
+                    decimals={0}
+                  /> {snapshot.aheadBehind >= 0 ? 'under budget' : 'over budget'}
+                </p>
+              </div>
+              <div style={{
+                width: '3rem',
+                height: '3rem',
+                borderRadius: '0.75rem',
+                background: statusBg,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <svg style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Remaining Funds */}
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Remaining Funds
+                </span>
+                <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>
+                  <AnimatedNumber value={snapshot.remainingFundsToday} prefix="$" decimals={0} />
+                </p>
+                <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                  Available today
+                </p>
+              </div>
+              <div style={{
+                width: '3rem',
+                height: '3rem',
+                borderRadius: '0.75rem',
+                background: '#10b981',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <svg style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Financial Health Summary */}
+        {financialHealth && (
+          <div style={{ ...cardStyle, marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{
+                  width: '2rem',
+                  height: '2rem',
+                  borderRadius: '0.5rem',
+                  background: financialHealth.healthLevel === 'excellent' ? '#10b981' :
+                    financialHealth.healthLevel === 'good' ? '#14b8a6' :
+                      financialHealth.healthLevel === 'fair' ? '#f59e0b' :
+                        '#ef4444',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '0.75rem',
+                  fontWeight: 700
+                }}>
+                  {financialHealth.healthScore}
+                </span>
+                Financial Health
+              </h3>
+              <a href="/income" style={{ fontSize: '0.875rem', color: '#14b8a6', fontWeight: 500, textDecoration: 'none' }}>
+                Manage Income →
+              </a>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              {/* Cash Flow */}
+              <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.75rem' }}>
+                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Weekly Cash Flow</p>
+                <p style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  color: financialHealth.netWeeklyCashFlow >= 0 ? '#10b981' : '#ef4444'
+                }}>
+                  {financialHealth.netWeeklyCashFlow >= 0 ? '+' : ''}${financialHealth.netWeeklyCashFlow.toFixed(0)}/week
+                </p>
+              </div>
+              {/* Emergency Fund */}
+              {financialHealth.emergencyFund && (
+                <div style={{ padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: '0.75rem' }}>
+                  <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Emergency Fund</p>
+                  <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#10b981' }}>
+                    {financialHealth.emergencyFund.percentComplete.toFixed(0)}% funded
+                  </p>
+                </div>
+              )}
+              {/* Loan Status */}
+              {financialHealth.loanRepaymentProjection && (
+                <div style={{ padding: '1rem', backgroundColor: '#fef2f2', borderRadius: '0.75rem' }}>
+                  <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Loans This Semester</p>
+                  <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ef4444' }}>
+                    ${financialHealth.loanRepaymentProjection.totalLoanAmount.toFixed(0)}
+                  </p>
+                </div>
+              )}
+            </div>
+            {/* Loan Projection Message */}
+            {financialHealth.loanRepaymentProjection && (
+              <div style={{
+                marginTop: '1rem',
+                padding: '0.75rem 1rem',
+                backgroundColor: '#f0fdfa',
+                borderRadius: '0.5rem',
+                borderLeft: '3px solid #14b8a6'
+              }}>
+                <p style={{ fontSize: '0.875rem', color: '#374151', lineHeight: 1.5 }}>
+                  {financialHealth.loanRepaymentProjection.message}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
+          {/* Semester Progress with Circular */}
+          <div style={cardStyle}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1.5rem' }}>
               Semester Progress
             </h3>
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-xs text-muted">Weeks Elapsed</p>
-                  <p className="text-xs font-medium text-foreground">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+              <CircularProgress
+                percentage={progressPercentage}
+                size={140}
+                strokeWidth={10}
+                label="complete"
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Weeks Elapsed</span>
+                  <span style={{ fontWeight: 600, color: '#111827' }}>
                     {snapshot.weeksElapsed} / {snapshot.weeksTotal}
-                  </p>
+                  </span>
                 </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-accent transition-all"
-                    style={{ 
-                      width: `${Math.min(100, (snapshot.weeksElapsed / snapshot.weeksTotal) * 100)}%` 
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <div>
-                  <p className="text-xs text-muted">Expected Spend</p>
-                  <p className="text-lg font-semibold text-foreground">
-                    ${snapshot.expectedSpendToDate.toFixed(0)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted">Actual Spend</p>
-                  <p className="text-lg font-semibold text-foreground">
-                    ${snapshot.actualSpendToDate.toFixed(0)}
-                  </p>
+                <div style={{ height: '1px', backgroundColor: '#e5e7eb', marginBottom: '1rem' }} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Expected Spend</p>
+                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#14b8a6' }}>
+                      <AnimatedNumber value={snapshot.expectedSpendToDate} prefix="$" decimals={0} />
+                    </p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Actual Spend</p>
+                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#111827' }}>
+                      <AnimatedNumber value={snapshot.actualSpendToDate} prefix="$" decimals={0} />
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
+
+          {/* Top Spending Categories */}
+          <div style={cardStyle}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
+              Top Spending (Last 14 Days)
+            </h3>
+            {snapshot.topCategories.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {snapshot.topCategories.slice(0, 5).map((cat, i) => {
+                  const percentage = totalSpending > 0 ? (cat.amount / totalSpending) * 100 : 0;
+                  return (
+                    <div key={i}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                          {CATEGORY_LABELS[cat.category]}
+                        </span>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#111827' }}>
+                          ${cat.amount.toFixed(0)}
+                        </span>
+                      </div>
+                      <div style={{ height: '0.5rem', backgroundColor: '#e5e7eb', borderRadius: '9999px', overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            height: '100%',
+                            backgroundColor: gradientColors[i % gradientColors.length],
+                            borderRadius: '9999px',
+                            transition: 'width 0.7s ease',
+                            width: `${percentage}%`
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                <div style={{ width: '4rem', height: '4rem', margin: '0 auto 1rem', borderRadius: '50%', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg style={{ width: '2rem', height: '2rem', color: '#9ca3af' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
+                </div>
+                <p style={{ color: '#4b5563' }}>No transactions yet</p>
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>Import your bank CSV to get started</p>
+              </div>
+            )}
+          </div>
+
+          {/* Upcoming Planned Items */}
+          <div style={cardStyle}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
+              Upcoming Planned Items
+            </h3>
+            {snapshot.plannedNext7Days.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {snapshot.plannedNext7Days.map((item, i) => (
+                  <div
+                    key={i}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', borderRadius: '0.75rem', backgroundColor: '#f9fafb' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{
+                        width: '2.5rem',
+                        height: '2.5rem',
+                        borderRadius: '0.5rem',
+                        background: '#14b8a6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontWeight: 700,
+                        fontSize: '0.875rem'
+                      }}>
+                        {format(new Date(item.date), 'dd')}
+                      </div>
+                      <div>
+                        <p style={{ fontWeight: 500, color: '#111827' }}>{item.name}</p>
+                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                          {format(new Date(item.date), 'EEEE, MMM dd')}
+                        </p>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#14b8a6' }}>
+                      ${item.amount.toFixed(0)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                <div style={{ width: '4rem', height: '4rem', margin: '0 auto 1rem', borderRadius: '50%', backgroundColor: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg style={{ width: '2rem', height: '2rem', color: '#059669' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p style={{ color: '#4b5563' }}>No planned items in the next 7 days</p>
+              </div>
+            )}
+          </div>
 
           {/* FAFSA Checklist */}
-          <Card>
-            <h3 className="text-lg font-medium text-foreground mb-4">
-              FAFSA Readiness Checklist
-            </h3>
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827' }}>
+                FAFSA Readiness
+              </h3>
+              <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '9999px', backgroundColor: '#ccfbf1', color: '#0f766e', fontWeight: 500 }}>
+                {fafsaChecklist ? Object.values(fafsaChecklist).filter(Boolean).length : 0}/8 Complete
+              </span>
+            </div>
             {fafsaChecklist && (
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {[
                   { key: 'createFsaId', label: 'Create FSA ID' },
                   { key: 'gatherTaxDocs', label: 'Gather tax documents' },
                   { key: 'listSchools', label: 'List schools to receive FAFSA' },
                   { key: 'submitFafsa', label: 'Submit FAFSA form' },
-                  { key: 'verification', label: 'Complete verification (if needed)' },
+                  { key: 'verification', label: 'Complete verification' },
                   { key: 'reviewAward', label: 'Review award letter' },
                   { key: 'acceptAid', label: 'Accept aid package' },
                   { key: 'markCalendar', label: 'Mark disbursement dates' },
-                ].map(({ key, label }) => (
-                  <label key={key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                    <input
-                      type="checkbox"
-                      checked={fafsaChecklist[key as keyof FafsaChecklist]}
-                      onChange={() => toggleFafsaItem(key as keyof FafsaChecklist)}
-                      className="w-4 h-4 text-accent border-border rounded focus:ring-2 focus:ring-accent"
-                    />
-                    <span className="text-sm text-foreground">{label}</span>
-                  </label>
-                ))}
+                ].map(({ key, label }) => {
+                  const isChecked = fafsaChecklist[key as keyof FafsaChecklist];
+                  return (
+                    <label
+                      key={key}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        borderRadius: '0.75rem',
+                        cursor: 'pointer',
+                        backgroundColor: isChecked ? '#ecfdf5' : '#f9fafb',
+                        border: isChecked ? '1px solid #a7f3d0' : '1px solid transparent'
+                      }}
+                    >
+                      <div style={{
+                        width: '1.25rem',
+                        height: '1.25rem',
+                        borderRadius: '0.375rem',
+                        border: isChecked ? 'none' : '2px solid #d1d5db',
+                        backgroundColor: isChecked ? '#10b981' : 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        {isChecked && (
+                          <svg style={{ width: '0.75rem', height: '0.75rem', color: 'white' }} fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleFafsaItem(key as keyof FafsaChecklist)}
+                        style={{ display: 'none' }}
+                      />
+                      <span style={{
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        color: isChecked ? '#047857' : '#374151',
+                        textDecoration: isChecked ? 'line-through' : 'none'
+                      }}>
+                        {label}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             )}
-            <div className="mt-4 pt-4 border-t border-border">
-              <a 
+            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+              <a
                 href="https://studentaid.gov/h/apply-for-aid/fafsa"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-accent hover:underline"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#14b8a6', fontWeight: 500, textDecoration: 'none' }}
               >
-                Learn more about FAFSA →
+                Learn more about FAFSA
+                <svg style={{ width: '1rem', height: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
               </a>
             </div>
-          </Card>
+          </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="mt-8 flex flex-wrap gap-4">
-          <Button variant="primary" href="/transactions">
+        <div style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+          <a
+            href="/transactions"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '0.75rem',
+              background: '#14b8a6',
+              color: 'white',
+              fontWeight: 600,
+              textDecoration: 'none',
+              boxShadow: '0 4px 6px rgba(20, 184, 166, 0.25)'
+            }}
+          >
+            <svg style={{ width: '1.25rem', height: '1.25rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
             Import Transactions
-          </Button>
-          <Button variant="secondary" href="/assistant">
+          </a>
+          <a
+            href="/assistant"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '0.75rem',
+              backgroundColor: 'white',
+              border: '1px solid #e5e7eb',
+              color: '#374151',
+              fontWeight: 600,
+              textDecoration: 'none'
+            }}
+          >
+            <svg style={{ width: '1.25rem', height: '1.25rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
             Ask MyFO a Question
-          </Button>
+          </a>
         </div>
       </div>
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }`}</style>
     </div>
   );
 }

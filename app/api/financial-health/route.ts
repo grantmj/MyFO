@@ -109,20 +109,20 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'userId required' }, { status: 400 });
         }
 
-        // Fetch all data in parallel
+        // Fetch all data in parallel - use maybeSingle to avoid 404 on missing records
         const [incomeResult, fundResult, planResult, snapshotResult] = await Promise.all([
             supabase.from('income_sources').select('*').eq('user_id', userId),
-            supabase.from('emergency_fund').select('*').eq('user_id', userId).single(),
-            supabase.from('plans').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).single(),
-            // Get budget snapshot for expense info
+            supabase.from('emergency_fund').select('*').eq('user_id', userId).maybeSingle(),
+            supabase.from('plans').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+            // Get budget snapshot for expense info - catch any errors
             fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/budget-snapshot?userId=${userId}`)
                 .then(res => res.ok ? res.json() : null)
                 .catch(() => null),
         ]);
 
         const incomeSources = (incomeResult.data || []) as any[];
-        const emergencyFundData = fundResult.data as any;
-        const plan = planResult.data as any;
+        const emergencyFundData = fundResult.data as any; // May be null
+        const plan = planResult.data as any; // May be null
         const snapshot = snapshotResult;
 
         // Calculate income by type

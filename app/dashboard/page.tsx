@@ -33,6 +33,38 @@ export default function Dashboard() {
     initializeDashboard();
   }, []);
 
+  // Check for data updates when tab becomes visible (user returns from chat)
+  useEffect(() => {
+    let lastCheckedUpdate = '';
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        // Check if data was updated via chat
+        try {
+          const updateFlag = localStorage.getItem('myfo_data_updated');
+          if (updateFlag && updateFlag !== lastCheckedUpdate) {
+            lastCheckedUpdate = updateFlag;
+            // Clear the flag and refresh dashboard
+            localStorage.removeItem('myfo_data_updated');
+            console.log('Data was updated via chat, refreshing dashboard...');
+            initializeDashboard();
+          }
+        } catch (e) {
+          console.warn('Could not check for data updates');
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Also check on mount in case user navigated directly
+    handleVisibilityChange();
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   async function initializeDashboard() {
     try {
       const userRes = await fetch('/api/user');
@@ -47,21 +79,41 @@ export default function Dashboard() {
         return;
       }
 
+      // Fetch data in parallel - handle each response individually to prevent one failure from breaking all
       const [snapshotRes, fafsaRes, healthRes] = await Promise.all([
-        fetch(`/api/budget-snapshot?userId=${user.id}`),
-        fetch(`/api/fafsa-checklist?userId=${user.id}`),
-        fetch(`/api/financial-health?userId=${user.id}`),
+        fetch(`/api/budget-snapshot?userId=${user.id}`).catch(() => null),
+        fetch(`/api/fafsa-checklist?userId=${user.id}`).catch(() => null),
+        fetch(`/api/financial-health?userId=${user.id}`).catch(() => null),
       ]);
 
-      const { snapshot: budgetSnapshot } = await snapshotRes.json();
-      setSnapshot(budgetSnapshot);
+      // Parse responses safely
+      if (snapshotRes?.ok) {
+        try {
+          const { snapshot: budgetSnapshot } = await snapshotRes.json();
+          setSnapshot(budgetSnapshot);
+        } catch (e) {
+          console.warn('Failed to parse budget snapshot');
+        }
+      }
 
-      const { checklist } = await fafsaRes.json();
-      setFafsaChecklist(checklist);
+      if (fafsaRes?.ok) {
+        try {
+          const { checklist } = await fafsaRes.json();
+          setFafsaChecklist(checklist);
+        } catch (e) {
+          console.warn('Failed to parse fafsa checklist');
+        }
+      }
 
-      const healthData = await healthRes.json();
-      if (healthData.financialHealth) {
-        setFinancialHealth(healthData.financialHealth);
+      if (healthRes?.ok) {
+        try {
+          const healthData = await healthRes.json();
+          if (healthData.financialHealth) {
+            setFinancialHealth(healthData.financialHealth);
+          }
+        } catch (e) {
+          console.warn('Failed to parse financial health');
+        }
       }
 
       setLoading(false);

@@ -29,13 +29,28 @@ function AssistantContent() {
       const { user } = await userRes.json();
       setUserId(user.id);
 
-      // Add welcome message
-      setMessages([
-        {
-          role: 'assistant',
-          content: "Hi! I'm MyFo, your financial copilot. Ask me questions like:\n\n• Can I afford to buy a $90 concert ticket?\n• How am I doing on my budget?\n• What should I cut back on?\n• Can I take a trip that costs $400?\n\nI'll give you honest answers based on your actual budget, not guesses!",
-        },
-      ]);
+      // Restore saved conversation or show welcome message
+      let restoredMessages: Message[] = [];
+      try {
+        const saved = localStorage.getItem('myfo_chat_messages');
+        if (saved) {
+          restoredMessages = JSON.parse(saved);
+        }
+      } catch (e) {
+        console.warn('Could not restore chat from localStorage');
+      }
+
+      if (restoredMessages.length > 0) {
+        setMessages(restoredMessages);
+      } else {
+        // Add welcome message
+        setMessages([
+          {
+            role: 'assistant',
+            content: "Hi! I'm MyFo, your financial copilot. Ask me questions like:\n\n• Can I afford to buy a $90 concert ticket?\n• How am I doing on my budget?\n• What should I cut back on?\n• Can I take a trip that costs $400?\n\nI'll give you honest answers based on your actual budget, not guesses!",
+          },
+        ]);
+      }
 
       setIsInitialized(true);
 
@@ -59,7 +74,8 @@ function AssistantContent() {
 
     const userMessage = messageContent.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    const newMessages = [...messages, { role: 'user' as const, content: userMessage }];
+    setMessages(newMessages);
     setLoading(true);
     setConfigError(false);
 
@@ -97,7 +113,26 @@ function AssistantContent() {
         return;
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      // Handle successful response
+      const finalMessages = [...newMessages, { role: 'assistant' as const, content: data.reply }];
+      setMessages(finalMessages);
+
+      // Save conversation to localStorage for persistence
+      try {
+        localStorage.setItem('myfo_chat_messages', JSON.stringify(finalMessages));
+      } catch (e) {
+        console.warn('Could not save chat to localStorage');
+      }
+
+      // Handle database updates - show notification and signal refresh needed
+      if (data.updates && data.updates.length > 0) {
+        // Set a flag that dashboard should refresh
+        localStorage.setItem('myfo_data_updated', Date.now().toString());
+
+        // Show a toast about what was updated
+        const updateSummary = data.updates.join(', ');
+        showToast(`✅ Updated: ${updateSummary}`, 'success');
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       showToast('Failed to send message', 'error');
@@ -129,6 +164,20 @@ function AssistantContent() {
     setInput(question);
   }
 
+  function clearChat() {
+    const welcomeMessage: Message = {
+      role: 'assistant',
+      content: "Hi! I'm MyFo, your financial copilot. Ask me questions like:\n\n• Can I afford to buy a $90 concert ticket?\n• How am I doing on my budget?\n• What should I cut back on?\n• Can I take a trip that costs $400?\n\nI'll give you honest answers based on your actual budget, not guesses!",
+    };
+    setMessages([welcomeMessage]);
+    try {
+      localStorage.removeItem('myfo_chat_messages');
+    } catch (e) {
+      console.warn('Could not clear chat from localStorage');
+    }
+    showToast('Chat cleared', 'success');
+  }
+
   const cardStyle: React.CSSProperties = {
     padding: '1.5rem',
     backgroundColor: 'white',
@@ -141,13 +190,29 @@ function AssistantContent() {
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
       <div style={{ maxWidth: '56rem', margin: '0 auto', padding: '2rem 1rem' }}>
-        <div style={{ marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>
-            Ask MyFO
-          </h1>
-          <p style={{ marginTop: '0.5rem', color: '#6b7280' }}>
-            Your personal financial copilot - ask me anything about your budget
-          </p>
+        <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>
+              Ask MyFo
+            </h1>
+            <p style={{ marginTop: '0.5rem', color: '#6b7280' }}>
+              Your personal financial copilot - ask me anything about your budget
+            </p>
+          </div>
+          <button
+            onClick={clearChat}
+            style={{
+              fontSize: '0.75rem',
+              padding: '0.375rem 0.75rem',
+              color: '#6b7280',
+              border: '1px solid #e5e7eb',
+              borderRadius: '0.375rem',
+              background: 'transparent',
+              cursor: 'pointer'
+            }}
+          >
+            Clear Chat
+          </button>
         </div>
 
         {configError && (
@@ -159,7 +224,7 @@ function AssistantContent() {
                   OpenAI API Key Required
                 </h3>
                 <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                  To use the MyFO chat assistant, you need to add your OpenAI API key to the <code style={{ backgroundColor: '#fef3c7', padding: '0 0.25rem', borderRadius: '0.25rem' }}>.env</code> file:
+                  To use the MyFo chat assistant, you need to add your OpenAI API key to the <code style={{ backgroundColor: '#fef3c7', padding: '0 0.25rem', borderRadius: '0.25rem' }}>.env</code> file:
                 </p>
                 <pre style={{ marginTop: '0.5rem', fontSize: '0.75rem', backgroundColor: '#fef3c7', padding: '0.5rem', borderRadius: '0.25rem', overflowX: 'auto' }}>
                   OPENAI_API_KEY=sk-your-key-here
@@ -272,7 +337,7 @@ function AssistantContent() {
         {/* Disclaimer */}
         <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
           <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-            ⚠️ MyFO is a budgeting tool, not a financial advisor. Recommendations are for educational purposes only.
+            ⚠️ MyFo is a budgeting tool, not a financial advisor. Recommendations are for educational purposes only.
             All calculations are deterministic based on your input data. Always make final decisions based on your own judgment.
           </p>
         </div>

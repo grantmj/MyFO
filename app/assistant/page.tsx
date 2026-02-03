@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 
 interface Message {
@@ -20,15 +18,10 @@ function AssistantContent() {
   const [loading, setLoading] = useState(false);
   const [configError, setConfigError] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     initializePage();
   }, []);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   async function initializePage() {
     try {
@@ -59,10 +52,6 @@ function AssistantContent() {
       console.error('Error initializing page:', error);
       showToast('Failed to initialize chat', 'error');
     }
-  }
-
-  function scrollToBottom() {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }
 
   async function sendMessageWithContent(messageContent: string, userIdToUse: string) {
@@ -140,107 +129,150 @@ function AssistantContent() {
     setInput(question);
   }
 
+  const cardStyle: React.CSSProperties = {
+    padding: '1.5rem',
+    backgroundColor: 'white',
+    borderRadius: '1rem',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    border: '1px solid #f3f4f6',
+    marginBottom: '1rem'
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-medium text-foreground">Ask MyFo</h1>
-          <p className="mt-1 text-sm text-muted">
+    <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
+      <div style={{ maxWidth: '56rem', margin: '0 auto', padding: '2rem 1rem' }}>
+        <div style={{ marginBottom: '2rem' }}>
+          <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>
+            Ask MyFO
+          </h1>
+          <p style={{ marginTop: '0.5rem', color: '#6b7280' }}>
             Your personal financial copilot - ask me anything about your budget
           </p>
         </div>
 
         {configError && (
-          <Card className="mb-4 bg-yellow-50 border-yellow-200">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">⚠️</span>
+          <div style={{ ...cardStyle, backgroundColor: '#fefce8', border: '1px solid #fde047' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>⚠️</span>
               <div>
-                <h3 className="text-sm font-medium text-foreground mb-1">
+                <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827', marginBottom: '0.25rem' }}>
                   OpenAI API Key Required
                 </h3>
-                <p className="text-xs text-muted">
-                  To use the MyFo chat assistant, you need to add your OpenAI API key to the <code className="bg-yellow-100 px-1 rounded">.env</code> file:
+                <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                  To use the MyFO chat assistant, you need to add your OpenAI API key to the <code style={{ backgroundColor: '#fef3c7', padding: '0 0.25rem', borderRadius: '0.25rem' }}>.env</code> file:
                 </p>
-                <pre className="mt-2 text-xs bg-yellow-100 p-2 rounded overflow-x-auto">
+                <pre style={{ marginTop: '0.5rem', fontSize: '0.75rem', backgroundColor: '#fef3c7', padding: '0.5rem', borderRadius: '0.25rem', overflowX: 'auto' }}>
                   OPENAI_API_KEY=sk-your-key-here
                 </pre>
               </div>
             </div>
-          </Card>
+          </div>
         )}
 
         {/* Chat Container */}
-        <Card className="mb-4 h-[500px] flex flex-col">
+        <div style={{ ...cardStyle, height: '500px', display: 'flex', flexDirection: 'column' }}>
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {messages.map((message, index) => (
               <div
                 key={index}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                style={{ display: 'flex', justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start' }}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${message.role === 'user'
-                      ? 'bg-accent text-white'
-                      : 'bg-gray-100 text-foreground'
-                    }`}
+                  style={{
+                    maxWidth: '80%',
+                    borderRadius: '0.75rem',
+                    padding: '0.75rem 1rem',
+                    backgroundColor: message.role === 'user' ? '#76B89F' : '#f3f4f6',
+                    color: message.role === 'user' ? 'white' : '#111827'
+                  }}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <p style={{ fontSize: '0.875rem', whiteSpace: 'pre-wrap', margin: 0 }}>{message.content}</p>
                 </div>
               </div>
             ))}
             {loading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-lg px-4 py-2">
-                  <p className="text-sm text-muted">Thinking...</p>
+              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <div style={{ backgroundColor: '#f3f4f6', borderRadius: '0.75rem', padding: '0.75rem 1rem' }}>
+                  <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>Thinking...</p>
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}
-          <div className="border-t border-border p-4">
-            <div className="flex gap-2">
+          <div style={{ borderTop: '1px solid #e5e7eb', padding: '1rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask me anything about your budget..."
-                className="flex-1 px-3 py-2 border border-border rounded-md text-sm text-foreground bg-white focus:outline-none focus:ring-2 focus:ring-accent"
+                style={{
+                  flex: 1,
+                  padding: '0.5rem 0.75rem',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  color: '#111827',
+                  backgroundColor: 'white',
+                  outline: 'none'
+                }}
                 disabled={loading}
               />
-              <Button
-                variant="primary"
+              <button
                 onClick={sendMessage}
                 disabled={!input.trim() || loading}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  borderRadius: '0.5rem',
+                  background: '#76B89F',
+                  color: 'white',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: (!input.trim() || loading) ? 'not-allowed' : 'pointer',
+                  opacity: (!input.trim() || loading) ? 0.5 : 1,
+                  fontSize: '0.875rem'
+                }}
               >
                 Send
-              </Button>
+              </button>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* Quick Questions */}
-        <Card>
-          <h3 className="text-sm font-medium text-foreground mb-3">Quick Questions</h3>
-          <div className="flex flex-wrap gap-2">
+        <div style={cardStyle}>
+          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>Quick Questions</h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             {quickQuestions.map((question, index) => (
               <button
                 key={index}
                 onClick={() => askQuickQuestion(question)}
-                className="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 text-foreground rounded-md transition-colors"
+                style={{
+                  fontSize: '0.875rem',
+                  padding: '0.5rem 0.75rem',
+                  backgroundColor: '#f3f4f6',
+                  color: '#111827',
+                  borderRadius: '0.5rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
               >
                 {question}
               </button>
             ))}
           </div>
-        </Card>
+        </div>
 
         {/* Disclaimer */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-muted">
-            ⚠️ MyFo is a budgeting tool, not a financial advisor. Recommendations are for educational purposes only.
+        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+            ⚠️ MyFO is a budgeting tool, not a financial advisor. Recommendations are for educational purposes only.
             All calculations are deterministic based on your input data. Always make final decisions based on your own judgment.
           </p>
         </div>
@@ -251,7 +283,15 @@ function AssistantContent() {
 
 export default function AssistantPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>}>
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', border: '4px solid #e5e7eb', borderTopColor: '#76B89F', animation: 'spin 1s linear infinite' }} />
+          <p style={{ color: '#4b5563', fontWeight: 500 }}>Loading chat...</p>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    }>
       <AssistantContent />
     </Suspense>
   );

@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
 import { CATEGORY_LABELS, Category } from "@/lib/constants";
@@ -282,16 +280,29 @@ export default function TransactionsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted">Loading...</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', border: '4px solid #e5e7eb', borderTopColor: '#76B89F', animation: 'spin 1s linear infinite' }} />
+          <p style={{ color: '#4b5563', fontWeight: 500 }}>Loading transactions...</p>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
+  const cardStyle: React.CSSProperties = {
+    padding: '1.5rem',
+    backgroundColor: 'white',
+    borderRadius: '1rem',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    border: '1px solid #f3f4f6',
+    marginBottom: '1rem'
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-6">
+    <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
+      <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1rem' }}>
+        <div style={{ marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>
             Transactions
           </h1>
@@ -301,61 +312,66 @@ export default function TransactionsPage() {
         </div>
 
         {/* PDF Import Section */}
-        <Card className="mb-4">
-          <h2 className="text-base font-medium text-foreground mb-2">Import from PDF</h2>
-          <p className="text-xs text-muted mb-3">
+        <div style={cardStyle}>
+          <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>Import from PDF</h2>
+          <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
             Upload a credit card statement PDF - we&apos;ll automatically extract and categorize transactions using AI.
           </p>
           
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <input
               ref={pdfInputRef}
               type="file"
               accept=".pdf"
               onChange={handlePdfSelect}
               disabled={pdfParsing}
-              className="block w-full text-xs text-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-accent file:text-white hover:file:bg-accent/90 disabled:opacity-50"
+              style={{
+                width: '100%',
+                fontSize: '0.875rem',
+                color: '#111827'
+              }}
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-accent file:text-white hover:file:bg-accent/90 disabled:opacity-50"
             />
 
             {pdfParsing && (
-              <div className="flex items-center gap-2 text-sm text-muted">
-                <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full"></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                <div style={{ width: '1rem', height: '1rem', borderRadius: '50%', border: '2px solid #76B89F', borderTopColor: 'transparent', animation: 'spin 1s linear infinite' }}></div>
                 <span>Parsing PDF and extracting transactions...</span>
               </div>
             )}
 
             {showPdfPreview && !pdfParsing && (
-              <div className="pt-3 border-t border-border">
-                <h3 className="text-xs font-medium text-foreground mb-3">
+              <div style={{ paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb' }}>
+                <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>
                   Found {editableTransactions.length} transactions - Review and confirm
                 </h3>
-                <div className="overflow-x-auto max-h-96 overflow-y-auto border border-border rounded">
-                  <table className="w-full text-xs">
-                    <thead className="bg-gray-50 sticky top-0">
-                      <tr className="border-b border-border">
-                        <th className="text-left py-2 px-2 font-medium text-muted">Date</th>
-                        <th className="text-left py-2 px-2 font-medium text-muted">Description</th>
-                        <th className="text-left py-2 px-2 font-medium text-muted">Amount</th>
-                        <th className="text-left py-2 px-2 font-medium text-muted">Category</th>
+                <div style={{ overflowX: 'auto', maxHeight: '24rem', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '0.5rem' }}>
+                  <table style={{ width: '100%', fontSize: '0.875rem' }}>
+                    <thead style={{ backgroundColor: '#f9fafb', position: 'sticky', top: 0 }}>
+                      <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                        <th style={{ textAlign: 'left', padding: '0.5rem', fontWeight: 500, color: '#6b7280' }}>Date</th>
+                        <th style={{ textAlign: 'left', padding: '0.5rem', fontWeight: 500, color: '#6b7280' }}>Description</th>
+                        <th style={{ textAlign: 'left', padding: '0.5rem', fontWeight: 500, color: '#6b7280' }}>Amount</th>
+                        <th style={{ textAlign: 'left', padding: '0.5rem', fontWeight: 500, color: '#6b7280' }}>Category</th>
                       </tr>
                     </thead>
                     <tbody>
                       {editableTransactions.map((transaction, index) => (
-                        <tr key={index} className="border-b border-border last:border-0">
-                          <td className="py-2 px-2 text-foreground whitespace-nowrap">
+                        <tr key={index} style={{ borderBottom: index === editableTransactions.length - 1 ? 'none' : '1px solid #e5e7eb' }}>
+                          <td style={{ padding: '0.5rem', color: '#111827', whiteSpace: 'nowrap' }}>
                             {format(new Date(transaction.date), 'MMM dd, yyyy')}
                           </td>
-                          <td className="py-2 px-2 text-foreground">
+                          <td style={{ padding: '0.5rem', color: '#111827' }}>
                             {transaction.description}
                           </td>
-                          <td className="py-2 px-2 text-foreground font-medium">
+                          <td style={{ padding: '0.5rem', color: '#111827', fontWeight: 500 }}>
                             ${transaction.amount.toFixed(2)}
                           </td>
-                          <td className="py-2 px-2">
+                          <td style={{ padding: '0.5rem' }}>
                             <select
                               value={transaction.category}
                               onChange={(e) => updateParsedCategory(index, e.target.value)}
-                              className="text-xs border border-border rounded px-2 py-1 text-foreground bg-white focus:outline-none focus:ring-1 focus:ring-accent"
+                              style={{ fontSize: '0.875rem', border: '1px solid #e5e7eb', borderRadius: '0.375rem', padding: '0.25rem 0.5rem', color: '#111827', backgroundColor: 'white' }}
                             >
                               {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
                                 <option key={value} value={value}>
@@ -369,43 +385,70 @@ export default function TransactionsPage() {
                     </tbody>
                   </table>
                 </div>
-                <div className="mt-3 flex gap-2">
-                  <Button
-                    variant="primary"
+                <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                  <button
                     onClick={confirmPdfImport}
                     disabled={uploading}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.5rem',
+                      background: '#76B89F',
+                      color: 'white',
+                      fontWeight: 600,
+                      border: 'none',
+                      cursor: uploading ? 'not-allowed' : 'pointer',
+                      opacity: uploading ? 0.5 : 1,
+                      fontSize: '0.875rem'
+                    }}
                   >
                     {uploading ? 'Importing...' : `Import ${editableTransactions.length} Transactions`}
-                  </Button>
-                  <Button variant="ghost" onClick={cancelPdfImport}>
+                  </button>
+                  <button
+                    onClick={cancelPdfImport}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.5rem',
+                      backgroundColor: 'white',
+                      border: '1px solid #e5e7eb',
+                      color: '#374151',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
                     Cancel
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
           </div>
-        </Card>
+        </div>
 
         {/* CSV Import Section */}
-        <Card className="mb-4">
-          <h2 className="text-base font-medium text-foreground mb-2">Import from CSV</h2>
-          <p className="text-xs text-muted mb-3">
+        <div style={cardStyle}>
+          <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>Import from CSV</h2>
+          <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
             Upload a CSV file from your bank. Should include Date, Description, and Amount columns.
           </p>
 
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <input
               ref={fileInputRef}
               type="file"
               accept=".csv"
               onChange={handleFileSelect}
-              className="block w-full text-xs text-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-accent file:text-white hover:file:bg-accent/90"
+              style={{
+                width: '100%',
+                fontSize: '0.875rem',
+                color: '#111827'
+              }}
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-accent file:text-white hover:file:bg-accent/90"
             />
 
             {showColumnMapper && (
-              <div className="pt-3 border-t border-border">
-                <h3 className="text-xs font-medium text-foreground mb-2">Map CSV Columns</h3>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div style={{ paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb' }}>
+                <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>Map CSV Columns</h3>
+                <div style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                   <Select
                     label="Date Column"
                     value={dateColumn}
@@ -434,7 +477,7 @@ export default function TransactionsPage() {
                     ]}
                   />
                 </div>
-                <div className="mt-2">
+                <div style={{ marginTop: '0.5rem' }}>
                   <Select
                     label="Amount Convention"
                     value={amountConvention}
@@ -445,29 +488,51 @@ export default function TransactionsPage() {
                     ]}
                   />
                 </div>
-                <div className="mt-3 flex gap-2">
-                  <Button
-                    variant="primary"
+                <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                  <button
                     onClick={() => processCSV(csvData, dateColumn, descColumn, amountColumn)}
                     disabled={!dateColumn || !descColumn || !amountColumn || uploading}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.5rem',
+                      background: '#76B89F',
+                      color: 'white',
+                      fontWeight: 600,
+                      border: 'none',
+                      cursor: (!dateColumn || !descColumn || !amountColumn || uploading) ? 'not-allowed' : 'pointer',
+                      opacity: (!dateColumn || !descColumn || !amountColumn || uploading) ? 0.5 : 1,
+                      fontSize: '0.875rem'
+                    }}
                   >
                     {uploading ? 'Importing...' : 'Import Transactions'}
-                  </Button>
-                  <Button variant="ghost" onClick={resetCSVState}>
+                  </button>
+                  <button
+                    onClick={resetCSVState}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '0.5rem',
+                      backgroundColor: 'white',
+                      border: '1px solid #e5e7eb',
+                      color: '#374151',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
                     Cancel
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
           </div>
-        </Card>
+        </div>
 
         {/* Bank/Credit Card Linking Section */}
-        <Card className="mb-4">
+        <div style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <div>
-              <h2 className="text-base font-medium text-foreground mb-1">Connect Your Accounts</h2>
-              <p className="text-xs text-muted">Link your bank or credit card for automatic transaction imports</p>
+              <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#111827', marginBottom: '0.25rem' }}>Connect Your Accounts</h2>
+              <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>Link your bank or credit card for automatic transaction imports</p>
             </div>
             <span style={{
               padding: '0.25rem 0.75rem',
@@ -573,48 +638,48 @@ export default function TransactionsPage() {
           }}>
             <span style={{ fontSize: '1rem' }}>✨</span>
             <p style={{ fontSize: '0.8rem', color: '#166534' }}>
-              Connecting accounts enables <strong>auto-categorization</strong> and <strong>real-time budget tracking</strong>
+              Connecting accounts enables               <strong>auto-categorization</strong> and <strong>real-time budget tracking</strong>
             </p>
           </div>
-        </Card>
+        </div>
 
         {/* Transactions Table */}
-        <Card>
-          <h2 className="text-base font-medium text-foreground mb-3">
+        <div style={cardStyle}>
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
             All Transactions ({transactions.length})
           </h2>
 
           {transactions.length === 0 ? (
-            <p className="text-sm text-muted">No transactions yet. Import your bank CSV to get started.</p>
+            <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>No transactions yet. Import your bank CSV to get started.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', fontSize: '0.875rem' }}>
                 <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-2 font-medium text-muted">Date</th>
-                    <th className="text-left py-3 px-2 font-medium text-muted">Description</th>
-                    <th className="text-left py-3 px-2 font-medium text-muted">Amount</th>
-                    <th className="text-left py-3 px-2 font-medium text-muted">Category</th>
-                    <th className="text-left py-3 px-2 font-medium text-muted">Source</th>
+                  <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Date</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Description</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Amount</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Category</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Source</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {transactions.map((transaction) => (
-                    <tr key={transaction.id} className="border-b border-border last:border-0">
-                      <td className="py-3 px-2 text-foreground whitespace-nowrap">
+                  {transactions.map((transaction, index) => (
+                    <tr key={transaction.id} style={{ borderBottom: index === transactions.length - 1 ? 'none' : '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '0.75rem 0.5rem', color: '#111827', whiteSpace: 'nowrap' }}>
                         {format(new Date(transaction.date), 'MMM dd, yyyy')}
                       </td>
-                      <td className="py-3 px-2 text-foreground">
+                      <td style={{ padding: '0.75rem 0.5rem', color: '#111827' }}>
                         {transaction.description}
                       </td>
-                      <td className="py-3 px-2 text-foreground font-medium">
+                      <td style={{ padding: '0.75rem 0.5rem', color: '#111827', fontWeight: 500 }}>
                         ${Math.abs(transaction.amount).toFixed(2)}
                       </td>
-                      <td className="py-3 px-2">
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
                         <select
                           value={transaction.category}
                           onChange={(e) => updateTransactionCategory(transaction.id, e.target.value)}
-                          className="text-xs border border-border rounded px-2 py-1 text-foreground bg-white focus:outline-none focus:ring-1 focus:ring-accent"
+                          style={{ fontSize: '0.875rem', border: '1px solid #e5e7eb', borderRadius: '0.375rem', padding: '0.25rem 0.5rem', color: '#111827', backgroundColor: 'white' }}
                         >
                           {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
                             <option key={value} value={value}>
@@ -623,7 +688,7 @@ export default function TransactionsPage() {
                           ))}
                         </select>
                       </td>
-                      <td className="py-3 px-2 text-muted text-xs">
+                      <td style={{ padding: '0.75rem 0.5rem', color: '#9ca3af', fontSize: '0.75rem' }}>
                         {transaction.source}
                       </td>
                     </tr>
@@ -632,8 +697,9 @@ export default function TransactionsPage() {
               </table>
             </div>
           )}
-        </Card>
+        </div>
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

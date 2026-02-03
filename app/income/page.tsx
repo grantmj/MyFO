@@ -11,7 +11,7 @@ const INCOME_TYPE_COLORS: Record<IncomeType, string> = {
     loan: '#ef4444',
     family: '#ec4899',
     work_study: '#06b6d4',
-    other: '#6b7280',
+    other: '#9b8fc9',
 };
 
 export default function IncomePage() {
@@ -317,7 +317,7 @@ export default function IncomePage() {
                                                 fontSize: '0.75rem',
                                                 fontWeight: 600
                                             }}>
-                                                {source.type === 'loan' ? '📋' : source.type === 'job' ? '💼' : source.type === 'scholarship' ? '🎓' : '$'}
+                                                {source.type === 'loan' ? '📋' : source.type === 'job' ? '💼' : source.type === 'scholarship' ? '🎓' : source.type === 'other' ? '🎉' : '$'}
                                             </div>
                                             <div>
                                                 <p style={{ fontWeight: 500, color: '#111827', fontSize: '0.875rem' }}>{source.name}</p>
@@ -328,7 +328,7 @@ export default function IncomePage() {
                                             </div>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <span style={{ fontWeight: 700, color: source.isLoan ? '#ef4444' : '#10b981', fontSize: '1rem' }}>
+                                            <span style={{ fontWeight: 700, color: source.isLoan || source.amount < 0 ? '#ef4444' : '#10b981', fontSize: '1rem' }}>
                                                 ${source.amount.toFixed(0)}
                                             </span>
                                             <button onClick={() => openEditModal(source)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', backgroundColor: 'white', cursor: 'pointer' }}>Edit</button>
@@ -597,7 +597,7 @@ export default function IncomePage() {
                     <div style={{ ...cardStyle, gridColumn: 'span 2' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: '#ef4444', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1rem' }}>🎉</span>
+                                <span style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: '#9b8fc9', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1rem' }}>🎉</span>
                                 2026 Events
                             </h3>
                             <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Mock data for demo</span>
@@ -626,7 +626,7 @@ export default function IncomePage() {
                                         setFormNotes('F1 race weekend ticket - one-time event');
                                         setShowAddModal(true);
                                     }}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#ef4444', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                 >
                                     + Add This Event
                                 </button>
@@ -658,7 +658,7 @@ export default function IncomePage() {
                                         setFormNotes('NYE rave ticket - one-time event');
                                         setShowAddModal(true);
                                     }}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#ef4444', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                 >
                                     + Add This Event
                                 </button>
@@ -690,7 +690,7 @@ export default function IncomePage() {
                                         setFormNotes('Ski trip with friends - one-time event');
                                         setShowAddModal(true);
                                     }}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#ef4444', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                 >
                                     + Add This Event
                                 </button>
@@ -722,7 +722,7 @@ export default function IncomePage() {
                                         setFormNotes('State fair visit - one-time event');
                                         setShowAddModal(true);
                                     }}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#ef4444', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                 >
                                     + Add This Event
                                 </button>

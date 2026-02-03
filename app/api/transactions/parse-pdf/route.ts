@@ -93,31 +93,39 @@ export async function POST(request: NextRequest) {
     }
 
     // Use OpenAI to extract structured transaction data
-    const prompt = `You are parsing a credit card statement. Extract all transactions as a JSON array.
+    const prompt = `You are parsing a credit card or bank statement. Extract transactions AND the account balance.
 
-For each transaction, extract:
-- date: ISO format (YYYY-MM-DD)
-- description: merchant/vendor name (cleaned up, remove extra characters and codes)
-- amount: positive number (absolute value, no dollar signs)
+Return a JSON object with:
+1. "transactions": array of transactions with:
+   - date: ISO format (YYYY-MM-DD)
+   - description: merchant/vendor name (cleaned up)
+   - amount: positive number (absolute value, no dollar signs)
 
-Rules:
-- Only include actual transactions (purchases, charges), not payments, fees, or summary lines
-- If you see a negative amount (like -50.00), convert it to positive (50.00)
-- Clean up merchant names to be readable
-- Parse dates from any format (MM/DD/YYYY, DD/MM/YYYY, etc.) to YYYY-MM-DD
-- Ignore: payment lines, balance lines, "previous balance", "new balance", interest charges, fees
-- Only return valid JSON array, no other text
+2. "statementBalance": the ending/new/current balance from the statement (can be negative for credit cards)
+
+Rules for transactions:
+- Only include actual purchases/charges, not payments or fees
+- Convert all amounts to positive numbers
+- Clean up merchant names
+- Parse dates to YYYY-MM-DD format
+
+Rules for balance:
+- Look for: "New Balance", "Current Balance", "Ending Balance", "Statement Balance"
+- Return as a number (negative if owed, positive if credit/funds available)
+- For credit cards: if you see "$1,234.56" owed, return -1234.56
+- If no balance found, return null
 
 Input PDF text:
 ${pdfText.substring(0, 15000)}
 
-Return ONLY valid JSON array:`;
+Return ONLY valid JSON object with transactions array and statementBalance:`;
 
     let transactions: Array<{
       date: string;
       description: string;
       amount: number;
     }> = [];
+    let statementBalance: number | null = null;
 
     try {
       const completion = await openai.chat.completions.create({
@@ -125,7 +133,7 @@ Return ONLY valid JSON array:`;
         messages: [
           {
             role: 'system',
-            content: 'You are a financial data extraction assistant. Return only valid JSON arrays.',
+            content: 'You are a financial data extraction assistant. Return only valid JSON objects with transactions and balance.',
           },
           {
             role: 'user',
@@ -136,13 +144,14 @@ Return ONLY valid JSON array:`;
         response_format: { type: 'json_object' },
       });
 
-      const responseText = completion.choices[0].message.content || '[]';
+      const responseText = completion.choices[0].message.content || '{}';
       
-      // Try to parse the response - it might be wrapped in an object
+      // Try to parse the response
       let parsed: any;
       try {
         parsed = JSON.parse(responseText);
-        // If it's an object with a transactions key, use that
+        
+        // Extract transactions
         if (parsed.transactions && Array.isArray(parsed.transactions)) {
           transactions = parsed.transactions;
         } else if (Array.isArray(parsed)) {
@@ -153,6 +162,12 @@ Return ONLY valid JSON array:`;
           if (arrayKey) {
             transactions = parsed[arrayKey];
           }
+        }
+        
+        // Extract balance
+        if (typeof parsed.statementBalance === 'number') {
+          statementBalance = parsed.statementBalance;
+          console.log('📊 Extracted statement balance:', statementBalance);
         }
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
@@ -217,6 +232,7 @@ Return ONLY valid JSON array:`;
       success: true,
       transactions: processedTransactions,
       count: processedTransactions.length,
+      statementBalance,
     });
   } catch (error: any) {
     console.error('Error parsing PDF:', error);

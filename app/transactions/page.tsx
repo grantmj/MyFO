@@ -46,15 +46,287 @@ const CATEGORY_ICONS: Record<string, string> = {
   income: '💰',
 };
 
+// Balance Graph Component
+function BalanceGraph({ transactions, viewPeriod, initialBalance }: { 
+  transactions: Transaction[], 
+  viewPeriod: '7days' | '30days' | '90days',
+  initialBalance: number 
+}) {
+  const cardStyle: React.CSSProperties = {
+    padding: '1.5rem',
+    backgroundColor: 'white',
+    borderRadius: '1rem',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    border: '1px solid #f3f4f6',
+    marginBottom: 0,
+  };
+
+  // Calculate daily balance data
+  const balanceData = useMemo(() => {
+    const now = new Date();
+    const daysBack = viewPeriod === '7days' ? 7 : viewPeriod === '30days' ? 30 : 90;
+    
+    // Get period start
+    const periodStart = new Date(now);
+    periodStart.setDate(now.getDate() - daysBack);
+    periodStart.setHours(0, 0, 0, 0);
+    
+    // Filter and sort transactions in period (expenses only)
+    const periodTx = transactions
+      .filter(t => {
+        const txDate = new Date(t.date);
+        return txDate >= periodStart && t.amount > 0 && t.category !== 'income';
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    // Calculate total spending in the period
+    const totalSpending = periodTx.reduce((sum, t) => sum + t.amount, 0);
+    
+    // Start balance at beginning of period (before any spending)
+    const startBalance = initialBalance + totalSpending;
+    
+    // Calculate balance for each day
+    const dailyData: { date: Date; balance: number }[] = [];
+    let currentBalance = startBalance;
+    
+    for (let i = 0; i < daysBack; i++) {
+      const date = new Date(periodStart);
+      date.setDate(periodStart.getDate() + i);
+      
+      // Get spending for this specific day
+      const daySpending = periodTx
+        .filter(t => {
+          const txDate = new Date(t.date);
+          txDate.setHours(0, 0, 0, 0);
+          const checkDate = new Date(date);
+          checkDate.setHours(0, 0, 0, 0);
+          return txDate.getTime() === checkDate.getTime();
+        })
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      // Balance at start of day (before spending)
+      dailyData.push({ date: new Date(date), balance: currentBalance });
+      
+      // Subtract spending for next day
+      currentBalance -= daySpending;
+    }
+    
+    return dailyData;
+  }, [transactions, viewPeriod, initialBalance]);
+
+  // Calculate graph dimensions
+  const width = 400;
+  const height = 280;
+  const padding = { top: 20, right: 20, bottom: 45, left: 50 };
+  const graphWidth = width - padding.left - padding.right;
+  const graphHeight = height - padding.top - padding.bottom;
+
+  if (balanceData.length === 0) {
+    return (
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
+          📈 Balance Over Time
+        </h2>
+        <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Not enough data</p>
+      </div>
+    );
+  }
+
+  // Calculate scales
+  const minBalance = Math.min(...balanceData.map(d => d.balance));
+  const maxBalance = Math.max(...balanceData.map(d => d.balance));
+  const balanceRange = maxBalance - minBalance || 1;
+  
+  // Calculate zero line Y position
+  const zeroY = padding.top + graphHeight - ((0 - minBalance) / balanceRange) * graphHeight;
+
+  // Generate path points with balance values
+  const points = balanceData.map((d, i) => {
+    const x = padding.left + (i / (balanceData.length - 1)) * graphWidth;
+    const y = padding.top + graphHeight - ((d.balance - minBalance) / balanceRange) * graphHeight;
+    return { x, y, balance: d.balance };
+  });
+
+  // Create separate paths for positive (green) and negative (red) portions
+  const positivePath: string[] = [];
+  const negativePath: string[] = [];
+  
+  for (let i = 0; i < points.length; i++) {
+    const point = points[i];
+    const prevPoint = i > 0 ? points[i - 1] : null;
+    
+    if (point.balance >= 0) {
+      // Point is positive
+      if (prevPoint && prevPoint.balance < 0) {
+        // Crossing from negative to positive - add intersection point
+        const intersectX = prevPoint.x + ((point.x - prevPoint.x) * (0 - prevPoint.balance)) / (point.balance - prevPoint.balance);
+        negativePath.push(`L ${intersectX} ${zeroY}`);
+        positivePath.push(`M ${intersectX} ${zeroY}`);
+      }
+      if (positivePath.length === 0) {
+        positivePath.push(`M ${point.x} ${point.y}`);
+      } else {
+        positivePath.push(`L ${point.x} ${point.y}`);
+      }
+    } else {
+      // Point is negative
+      if (prevPoint && prevPoint.balance >= 0) {
+        // Crossing from positive to negative - add intersection point
+        const intersectX = prevPoint.x + ((point.x - prevPoint.x) * (0 - prevPoint.balance)) / (point.balance - prevPoint.balance);
+        positivePath.push(`L ${intersectX} ${zeroY}`);
+        negativePath.push(`M ${intersectX} ${zeroY}`);
+      }
+      if (negativePath.length === 0) {
+        negativePath.push(`M ${point.x} ${point.y}`);
+      } else {
+        negativePath.push(`L ${point.x} ${point.y}`);
+      }
+    }
+  }
+  
+  const positivePathD = positivePath.join(' ');
+  const negativePathD = negativePath.join(' ');
+
+  return (
+    <div style={cardStyle}>
+      <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        📈 Balance Over Time
+      </h2>
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
+        {/* Grid lines (subtle) */}
+        {[0, 0.25, 0.5, 0.75, 1].map((pct) => {
+          const y = padding.top + graphHeight * (1 - pct);
+          return (
+            <line
+              key={pct}
+              x1={padding.left}
+              y1={y}
+              x2={width - padding.right}
+              y2={y}
+              stroke="#e5e7eb"
+              strokeWidth="1"
+              opacity="0.3"
+            />
+          );
+        })}
+        
+        {/* Zero line (horizontal line at y=0) */}
+        {minBalance < 0 && maxBalance > 0 && (
+          <g>
+            <line
+              x1={padding.left}
+              y1={zeroY}
+              x2={width - padding.right}
+              y2={zeroY}
+              stroke="#6b7280"
+              strokeWidth="1.5"
+              strokeDasharray="5,5"
+              opacity="0.5"
+            />
+            <text
+              x={width - padding.right + 5}
+              y={zeroY}
+              fontSize="9"
+              fill="#6b7280"
+              dominantBaseline="middle"
+            >
+              $0
+            </text>
+          </g>
+        )}
+        
+        {/* Positive balance line (green) */}
+        {positivePathD && (
+          <path
+            d={positivePathD}
+            fill="none"
+            stroke="#22c55e"
+            strokeWidth="2.5"
+            opacity="0.7"
+          />
+        )}
+        
+        {/* Negative balance line (red) */}
+        {negativePathD && (
+          <path
+            d={negativePathD}
+            fill="none"
+            stroke="#ef4444"
+            strokeWidth="2.5"
+            opacity="0.7"
+          />
+        )}
+        
+        {/* Y-axis labels */}
+        {[0, 1].map((pct) => {
+          const y = padding.top + graphHeight * (1 - pct);
+          const value = minBalance + balanceRange * pct;
+          return (
+            <text
+              key={pct}
+              x={padding.left - 10}
+              y={y}
+              textAnchor="end"
+              fontSize="10"
+              fill="#9ca3af"
+              dominantBaseline="middle"
+            >
+              ${value.toFixed(0)}
+            </text>
+          );
+        })}
+        
+        {/* X-axis day labels */}
+        {balanceData.map((d, i) => {
+          // Show labels every few days based on view period
+          const interval = viewPeriod === '7days' ? 1 : viewPeriod === '30days' ? 5 : 15;
+          if (i % interval !== 0 && i !== balanceData.length - 1) return null;
+          
+          const x = padding.left + (i / (balanceData.length - 1)) * graphWidth;
+          const dateStr = d.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          
+          return (
+            <text
+              key={i}
+              x={x}
+              y={height - padding.bottom + 15}
+              textAnchor="middle"
+              fontSize="9"
+              fill="#9ca3af"
+            >
+              {dateStr}
+            </text>
+          );
+        })}
+        
+        {/* Gradient definitions */}
+        <defs>
+          <linearGradient id="balanceGradientGreen" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#22c55e" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#22c55e" stopOpacity="0.03" />
+          </linearGradient>
+          <linearGradient id="balanceGradientRed" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#ef4444" stopOpacity="0.03" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  );
+}
+
 export default function TransactionsPage() {
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [snapshot, setSnapshot] = useState<any>(null);
+  const [statementBalance, setStatementBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [viewPeriod, setViewPeriod] = useState<'week' | 'month' | 'semester'>('month');
+  const [activeTab, setActiveTab] = useState<'manage' | 'analytics' | 'history'>('manage');
+  const [viewPeriod, setViewPeriod] = useState<'7days' | '30days' | '90days'>('30days');
 
   // CSV parsing state
   const [showColumnMapper, setShowColumnMapper] = useState(false);
@@ -74,20 +346,33 @@ export default function TransactionsPage() {
   // Computed spending analytics
   const spendingAnalytics = useMemo(() => {
     const now = new Date();
-    let periodStart: Date;
+    let daysBack: number;
+    let periodLabel: string;
 
     switch (viewPeriod) {
-      case 'week':
-        periodStart = startOfWeek(now);
+      case '7days':
+        daysBack = 7;
+        periodLabel = 'Last 7 Days';
         break;
-      case 'semester':
-        periodStart = new Date(now.getFullYear(), now.getMonth() < 6 ? 0 : 6, 1);
+      case '90days':
+        daysBack = 90;
+        periodLabel = 'Last 90 Days';
         break;
-      default:
-        periodStart = startOfMonth(now);
+      default: // '30days'
+        daysBack = 30;
+        periodLabel = 'Last 30 Days';
     }
 
-    const prevPeriodStart = subMonths(periodStart, 1);
+    // Current period: last N days
+    const periodStart = new Date(now);
+    periodStart.setDate(now.getDate() - daysBack);
+    periodStart.setHours(0, 0, 0, 0);
+
+    // Previous period: the N days before that
+    const prevPeriodStart = new Date(periodStart);
+    prevPeriodStart.setDate(periodStart.getDate() - daysBack);
+    const prevPeriodEnd = new Date(periodStart);
+    prevPeriodEnd.setHours(23, 59, 59, 999);
 
     // Filter transactions for current period (expenses only, positive amounts)
     const periodTransactions = transactions.filter(t => {
@@ -97,16 +382,21 @@ export default function TransactionsPage() {
 
     const prevPeriodTransactions = transactions.filter(t => {
       const txDate = new Date(t.date);
-      return txDate >= prevPeriodStart && txDate < periodStart && t.amount > 0 && t.category !== 'income';
+      return txDate >= prevPeriodStart && txDate < prevPeriodEnd && t.amount > 0 && t.category !== 'income';
     });
+
+    // Debug: log filtering info
+    if (transactions.length > 0) {
+      console.log(`[${periodLabel}] Period start:`, periodStart.toISOString().split('T')[0]);
+      console.log(`[${periodLabel}] Transactions in period:`, periodTransactions.length, 'of', transactions.length);
+    }
 
     // Calculate totals
     const totalSpending = periodTransactions.reduce((sum, t) => sum + t.amount, 0);
     const prevTotalSpending = prevPeriodTransactions.reduce((sum, t) => sum + t.amount, 0);
 
-    // Days elapsed in period
-    const daysElapsed = Math.max(1, Math.ceil((now.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)));
-    const avgDaily = totalSpending / daysElapsed;
+    // Average per day over the full period (not just days with transactions)
+    const avgDaily = totalSpending / daysBack;
 
     // Category breakdown
     const categoryMap: Record<string, number> = {};
@@ -134,9 +424,11 @@ export default function TransactionsPage() {
       totalSpending,
       prevTotalSpending,
       avgDaily,
-      daysElapsed,
+      daysBack,
+      periodLabel,
       categoryTotals,
       topExpenses,
+      transactionCount: periodTransactions.length,
       changePercent: prevTotalSpending > 0 ? ((totalSpending - prevTotalSpending) / prevTotalSpending) * 100 : 0,
     };
   }, [transactions, viewPeriod]);
@@ -151,12 +443,26 @@ export default function TransactionsPage() {
       const { user } = await userRes.json();
       setUserId(user.id);
 
-      await fetchTransactions(user.id);
+      // Fetch transactions and snapshot in parallel
+      await Promise.all([
+        fetchTransactions(user.id),
+        fetchSnapshot(user.id),
+      ]);
     } catch (error) {
       console.error('Error initializing page:', error);
       showToast('Failed to load transactions', 'error');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchSnapshot(uid: string) {
+    try {
+      const res = await fetch(`/api/budget-snapshot?userId=${uid}`);
+      const data = await res.json();
+      setSnapshot(data.snapshot);
+    } catch (error) {
+      console.error('Error fetching snapshot:', error);
     }
   }
 
@@ -247,10 +553,15 @@ export default function TransactionsPage() {
       });
 
       if (res.ok) {
-        const { count } = await res.json();
-        showToast(`Imported ${count} transactions successfully!`, 'success');
-        await fetchTransactions(userId);
+        const { count, duplicatesSkipped, message } = await res.json();
+        showToast(message || `Imported ${count} transactions successfully!`, 'success');
+        await Promise.all([
+          fetchTransactions(userId),
+          fetchSnapshot(userId),
+        ]);
         resetCSVState();
+        // Switch to analytics tab to see the results
+        setActiveTab('analytics');
       } else {
         showToast('Failed to import transactions', 'error');
       }
@@ -292,6 +603,49 @@ export default function TransactionsPage() {
     }
   }
 
+  async function deleteTransaction(transactionId: string) {
+    if (!confirm('Are you sure you want to delete this transaction?')) return;
+
+    try {
+      const res = await fetch(`/api/transactions?id=${transactionId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        showToast('Transaction deleted', 'success');
+        if (userId) await fetchTransactions(userId);
+      } else {
+        showToast('Failed to delete transaction', 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      showToast('Failed to delete transaction', 'error');
+    }
+  }
+
+  async function clearAllTransactions() {
+    if (!confirm('Are you sure you want to delete ALL transactions? This cannot be undone.')) return;
+
+    try {
+      setLoading(true);
+      
+      // Delete transactions one by one (could be optimized with a bulk delete endpoint)
+      const deletePromises = transactions.map(t => 
+        fetch(`/api/transactions?id=${t.id}`, { method: 'DELETE' })
+      );
+      
+      await Promise.all(deletePromises);
+      
+      showToast('All transactions cleared', 'success');
+      if (userId) await fetchTransactions(userId);
+    } catch (error) {
+      console.error('Error clearing transactions:', error);
+      showToast('Failed to clear transactions', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // PDF Upload handlers
   async function handlePdfSelect(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -320,7 +674,17 @@ export default function TransactionsPage() {
         setParsedTransactions(data.transactions);
         setEditableTransactions(data.transactions.map((t: any) => ({ ...t })));
         setShowPdfPreview(true);
-        showToast(`Found ${data.count} transactions!`, 'success');
+        
+        // Capture statement balance if available
+        if (typeof data.statementBalance === 'number') {
+          setStatementBalance(data.statementBalance);
+          const balanceMsg = data.statementBalance >= 0 
+            ? `Balance: $${data.statementBalance.toFixed(2)} available` 
+            : `Balance: $${Math.abs(data.statementBalance).toFixed(2)} owed`;
+          showToast(`Found ${data.count} transactions! ${balanceMsg}`, 'success');
+        } else {
+          showToast(`Found ${data.count} transactions!`, 'success');
+        }
       } else {
         showToast(data.error || 'Failed to parse PDF', 'error');
       }
@@ -349,10 +713,15 @@ export default function TransactionsPage() {
       });
 
       if (res.ok) {
-        const { count } = await res.json();
-        showToast(`Imported ${count} transactions from PDF!`, 'success');
-        await fetchTransactions(userId);
+        const { count, duplicatesSkipped, message } = await res.json();
+        showToast(message || `Imported ${count} transactions from PDF!`, 'success');
+        await Promise.all([
+          fetchTransactions(userId),
+          fetchSnapshot(userId),
+        ]);
         cancelPdfImport();
+        // Switch to analytics tab to see the results
+        setActiveTab('analytics');
       } else {
         showToast('Failed to import transactions', 'error');
       }
@@ -408,35 +777,151 @@ export default function TransactionsPage() {
             Transactions
           </h1>
           <p style={{ marginTop: '0.5rem', color: '#6b7280' }}>
-            Track and analyze your spending
+            Import, manage, and analyze your spending
           </p>
         </div>
 
-        {/* Period Toggle */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-          {(['week', 'month', 'semester'] as const).map((period) => (
-            <button
-              key={period}
-              onClick={() => setViewPeriod(period)}
-              style={{
-                padding: '0.5rem 1rem',
-                borderRadius: '0.5rem',
-                border: 'none',
-                background: viewPeriod === period ? '#76B89F' : '#e5e7eb',
-                color: viewPeriod === period ? 'white' : '#374151',
-                fontWeight: 500,
-                fontSize: '0.875rem',
-                cursor: 'pointer',
-                textTransform: 'capitalize',
-              }}
-            >
-              This {period}
-            </button>
-          ))}
+        {/* Tab Navigation */}
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '2px solid #e5e7eb' }}>
+          <button
+            onClick={() => setActiveTab('manage')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              border: 'none',
+              background: 'transparent',
+              color: activeTab === 'manage' ? '#76B89F' : '#6b7280',
+              fontWeight: 600,
+              fontSize: '1rem',
+              cursor: 'pointer',
+              borderBottom: activeTab === 'manage' ? '3px solid #76B89F' : '3px solid transparent',
+              marginBottom: '-2px',
+              transition: 'all 0.2s',
+            }}
+          >
+            Import
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              border: 'none',
+              background: 'transparent',
+              color: activeTab === 'analytics' ? '#76B89F' : '#6b7280',
+              fontWeight: 600,
+              fontSize: '1rem',
+              cursor: 'pointer',
+              borderBottom: activeTab === 'analytics' ? '3px solid #76B89F' : '3px solid transparent',
+              marginBottom: '-2px',
+              transition: 'all 0.2s',
+            }}
+          >
+            Analytics
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              border: 'none',
+              background: 'transparent',
+              color: activeTab === 'history' ? '#76B89F' : '#6b7280',
+              fontWeight: 600,
+              fontSize: '1rem',
+              cursor: 'pointer',
+              borderBottom: activeTab === 'history' ? '3px solid #76B89F' : '3px solid transparent',
+              marginBottom: '-2px',
+              transition: 'all 0.2s',
+            }}
+          >
+            Transaction History
+          </button>
         </div>
 
-        {/* Spending Overview Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+        {/* Tab Content */}
+        {activeTab === 'analytics' && (
+          <>
+            {/* Period Toggle */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+              {[
+                { key: '7days', label: 'Last 7 Days' },
+                { key: '30days', label: 'Last 30 Days' },
+                { key: '90days', label: 'Last 90 Days' }
+              ].map((period) => (
+                <button
+                  key={period.key}
+                  onClick={() => setViewPeriod(period.key as '7days' | '30days' | '90days')}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    border: 'none',
+                    background: viewPeriod === period.key ? '#76B89F' : '#e5e7eb',
+                    color: viewPeriod === period.key ? 'white' : '#374151',
+                    fontWeight: 500,
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {period.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Empty State for Analytics */}
+            {transactions.length === 0 ? (
+              <div style={cardStyle}>
+                <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📊</div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>
+                    No Transactions Yet
+                  </h3>
+                  <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1.5rem' }}>
+                    Import your transactions to see spending analytics and insights
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('manage')}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '0.5rem',
+                      background: '#76B89F',
+                      color: 'white',
+                      border: 'none',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                    }}
+                  >
+                    Go to Import & Manage
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Spending Overview Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+          {/* Balance/Available Funds */}
+          <div style={{ ...cardStyle, marginBottom: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '1.25rem' }}>💵</span>
+              <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                {statementBalance !== null ? 'Statement Balance' : 'Available Balance'}
+              </span>
+            </div>
+            <p style={{ 
+              fontSize: '2rem', 
+              fontWeight: 700, 
+              color: (statementBalance !== null ? statementBalance : snapshot?.balance ?? 0) >= 0 ? '#111827' : '#ef4444', 
+              margin: 0 
+            }}>
+              ${statementBalance !== null 
+                ? Math.abs(statementBalance).toFixed(2) 
+                : (snapshot?.balance ? snapshot.balance.toFixed(2) : '0.00')}
+            </p>
+            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+              {statementBalance !== null 
+                ? (statementBalance >= 0 ? 'credit/available' : 'amount owed')
+                : (snapshot?.balance >= 0 ? 'remaining funds' : 'overspent')}
+            </p>
+          </div>
+
           {/* Total Spending */}
           <div style={{ ...cardStyle, marginBottom: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -467,7 +952,7 @@ export default function TransactionsPage() {
               ${spendingAnalytics.avgDaily.toFixed(2)}
             </p>
             <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-              over {spendingAnalytics.daysElapsed} days
+              over {spendingAnalytics.daysBack} days
             </p>
           </div>
 
@@ -478,7 +963,7 @@ export default function TransactionsPage() {
               <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Transactions</span>
             </div>
             <p style={{ fontSize: '2rem', fontWeight: 700, color: '#111827', margin: 0 }}>
-              {spendingAnalytics.categoryTotals.reduce((sum, c) => sum + 1, 0) > 0 ? spendingAnalytics.topExpenses.length + (spendingAnalytics.categoryTotals.length > 5 ? '+' : '') : '0'}
+              {spendingAnalytics.transactionCount}
             </p>
             <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
               {spendingAnalytics.categoryTotals.length} categories
@@ -524,61 +1009,70 @@ export default function TransactionsPage() {
           </div>
         )}
 
-        {/* Top Expenses */}
+        {/* Top Expenses and Balance Graph */}
         {spendingAnalytics.topExpenses.length > 0 && (
-          <div style={cardStyle}>
-            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              🔥 Top Expenses
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {spendingAnalytics.topExpenses.map((tx, i) => (
-                <div key={tx.id} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0.75rem',
-                  background: '#f9fafb',
-                  borderRadius: '0.5rem',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{
-                      width: '1.5rem',
-                      height: '1.5rem',
-                      borderRadius: '50%',
-                      background: CATEGORY_COLORS[tx.category] || '#6b7280',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.75rem',
-                      color: 'white',
-                      fontWeight: 600,
-                    }}>
-                      {i + 1}
-                    </span>
-                    <div>
-                      <p style={{ fontWeight: 500, color: '#111827', fontSize: '0.875rem', margin: 0 }}>{tx.description}</p>
-                      <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>
-                        {CATEGORY_LABELS[tx.category as Category] || tx.category} • {format(new Date(tx.date), 'MMM d')}
-                      </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+            {/* Top Expenses */}
+            <div style={cardStyle}>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                🔥 Top Expenses
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {spendingAnalytics.topExpenses.map((tx, i) => (
+                  <div key={tx.id} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.75rem',
+                    background: '#f9fafb',
+                    borderRadius: '0.5rem',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{
+                        width: '1.5rem',
+                        height: '1.5rem',
+                        borderRadius: '50%',
+                        background: CATEGORY_COLORS[tx.category] || '#6b7280',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.75rem',
+                        color: 'white',
+                        fontWeight: 600,
+                      }}>
+                        {i + 1}
+                      </span>
+                      <div>
+                        <p style={{ fontWeight: 500, color: '#111827', fontSize: '0.875rem', margin: 0 }}>{tx.description}</p>
+                        <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>
+                          {CATEGORY_LABELS[tx.category as Category] || tx.category} • {format(new Date(tx.date), 'MMM d')}
+                        </p>
+                      </div>
                     </div>
+                    <span style={{ fontWeight: 600, color: '#ef4444', fontSize: '0.875rem' }}>
+                      -${tx.amount.toFixed(2)}
+                    </span>
                   </div>
-                  <span style={{ fontWeight: 600, color: '#ef4444', fontSize: '0.875rem' }}>
-                    -${tx.amount.toFixed(2)}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+
+            {/* Balance Over Time Graph */}
+            <BalanceGraph 
+              transactions={transactions} 
+              viewPeriod={viewPeriod}
+              initialBalance={statementBalance !== null ? statementBalance : (snapshot?.balance || 0)}
+            />
           </div>
+        )}
+              </>
+            )}
+          </>
         )}
 
-        {/* Empty State */}
-        {transactions.length === 0 && (
-          <div style={{ ...cardStyle, textAlign: 'center', padding: '3rem' }}>
-            <span style={{ fontSize: '3rem', marginBottom: '1rem', display: 'block' }}>📭</span>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>No transactions yet</h3>
-            <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Import your bank statements below to see your spending breakdown</p>
-          </div>
-        )}
+        {/* Import & Manage Tab */}
+        {activeTab === 'manage' && (
+          <>
         <div style={cardStyle}>
           <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>Import from PDF</h2>
           <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
@@ -909,62 +1403,127 @@ export default function TransactionsPage() {
             </p>
           </div>
         </div>
+          </>
+        )}
 
-        {/* Transactions Table */}
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
-            All Transactions ({transactions.length})
-          </h2>
-
-          {transactions.length === 0 ? (
-            <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>No transactions yet. Import your bank CSV to get started.</p>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', fontSize: '0.875rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                    <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Date</th>
-                    <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Description</th>
-                    <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Amount</th>
-                    <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Category</th>
-                    <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Source</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map((transaction, index) => (
-                    <tr key={transaction.id} style={{ borderBottom: index === transactions.length - 1 ? 'none' : '1px solid #e5e7eb' }}>
-                      <td style={{ padding: '0.75rem 0.5rem', color: '#111827', whiteSpace: 'nowrap' }}>
-                        {format(new Date(transaction.date), 'MMM dd, yyyy')}
-                      </td>
-                      <td style={{ padding: '0.75rem 0.5rem', color: '#111827' }}>
-                        {transaction.description}
-                      </td>
-                      <td style={{ padding: '0.75rem 0.5rem', color: '#111827', fontWeight: 500 }}>
-                        ${Math.abs(transaction.amount).toFixed(2)}
-                      </td>
-                      <td style={{ padding: '0.75rem 0.5rem' }}>
-                        <select
-                          value={transaction.category}
-                          onChange={(e) => updateTransactionCategory(transaction.id, e.target.value)}
-                          style={{ fontSize: '0.875rem', border: '1px solid #e5e7eb', borderRadius: '0.375rem', padding: '0.25rem 0.5rem', color: '#111827', backgroundColor: 'white' }}
-                        >
-                          {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td style={{ padding: '0.75rem 0.5rem', color: '#9ca3af', fontSize: '0.75rem' }}>
-                        {transaction.source}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* Transaction History Tab */}
+        {activeTab === 'history' && (
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', margin: 0 }}>
+                All Transactions ({transactions.length})
+              </h2>
+              {transactions.length > 0 && (
+                <button
+                  onClick={clearAllTransactions}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.875rem',
+                    borderRadius: '0.5rem',
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  Clear All
+                </button>
+              )}
             </div>
-          )}
-        </div>
+
+            {transactions.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📋</div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>
+                  No Transaction History
+                </h3>
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1.5rem' }}>
+                  Import transactions to see your complete history here
+                </p>
+                <button
+                  onClick={() => setActiveTab('manage')}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '0.5rem',
+                    background: '#76B89F',
+                    color: 'white',
+                    border: 'none',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  Go to Import
+                </button>
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', fontSize: '0.875rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Date</th>
+                      <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Description</th>
+                      <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Amount</th>
+                      <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Category</th>
+                      <th style={{ textAlign: 'left', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Source</th>
+                      <th style={{ textAlign: 'center', padding: '0.75rem 0.5rem', fontWeight: 500, color: '#6b7280' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.map((transaction, index) => (
+                      <tr key={transaction.id} style={{ borderBottom: index === transactions.length - 1 ? 'none' : '1px solid #e5e7eb' }}>
+                        <td style={{ padding: '0.75rem 0.5rem', color: '#111827', whiteSpace: 'nowrap' }}>
+                          {format(new Date(transaction.date), 'MMM dd, yyyy')}
+                        </td>
+                        <td style={{ padding: '0.75rem 0.5rem', color: '#111827' }}>
+                          {transaction.description}
+                        </td>
+                        <td style={{ padding: '0.75rem 0.5rem', color: '#111827', fontWeight: 500 }}>
+                          ${Math.abs(transaction.amount).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '0.75rem 0.5rem' }}>
+                          <select
+                            value={transaction.category}
+                            onChange={(e) => updateTransactionCategory(transaction.id, e.target.value)}
+                            style={{ fontSize: '0.875rem', border: '1px solid #e5e7eb', borderRadius: '0.375rem', padding: '0.25rem 0.5rem', color: '#111827', backgroundColor: 'white' }}
+                          >
+                            {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td style={{ padding: '0.75rem 0.5rem', color: '#9ca3af', fontSize: '0.75rem' }}>
+                          {transaction.source}
+                        </td>
+                        <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
+                          <button
+                            onClick={() => deleteTransaction(transaction.id)}
+                            style={{
+                              padding: '0.25rem 0.5rem',
+                              fontSize: '0.75rem',
+                              borderRadius: '0.375rem',
+                              backgroundColor: '#fee2e2',
+                              color: '#dc2626',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontWeight: 500,
+                            }}
+                            title="Delete transaction"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

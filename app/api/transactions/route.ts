@@ -73,21 +73,64 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No transactions provided' }, { status: 400 });
     }
 
-    // Process and create transactions
-    const processedTransactions = transactions.map(t => {
-      const amount = normalizeAmount(t.amount, amountConvention);
-      const category = categorizeTransaction(t.description);
+    // Fetch existing transactions to check for duplicates
+    const { data: existingTransactions, error: fetchError } = await supabase
+      .from('transactions')
+      .select('date, description, amount')
+      .eq('user_id', userId);
 
-      return {
-        user_id: userId,
-        date: new Date(t.date).toISOString().split('T')[0],
-        description: t.description,
-        amount,
-        category,
-        merchant_guess: t.description.substring(0, 50),
-        source,
-      };
-    });
+    if (fetchError) {
+      console.error('Error fetching existing transactions:', fetchError);
+      return NextResponse.json({ error: 'Failed to check for duplicates' }, { status: 500 });
+    }
+
+    // Create a Set of existing transaction keys for quick lookup
+    const existingKeys = new Set(
+      (existingTransactions || []).map(t => 
+        `${t.date}|${t.description.trim().toLowerCase()}|${Math.abs(t.amount).toFixed(2)}`
+      )
+    );
+
+    // Process and filter out duplicates
+    const processedTransactions = transactions
+      .map(t => {
+        const amount = normalizeAmount(t.amount, amountConvention);
+        const category = categorizeTransaction(t.description);
+        const dateStr = new Date(t.date).toISOString().split('T')[0];
+
+        return {
+          user_id: userId,
+          date: dateStr,
+          description: t.description,
+          amount,
+          category,
+          merchant_guess: t.description.substring(0, 50),
+          source,
+          // Key for duplicate detection
+          _key: `${dateStr}|${t.description.trim().toLowerCase()}|${Math.abs(amount).toFixed(2)}`
+        };
+      })
+      .filter(t => {
+        // Skip if duplicate exists
+        if (existingKeys.has(t._key)) {
+          console.log('Skipping duplicate:', t.description, t.date, t.amount);
+          return false;
+        }
+        return true;
+      })
+      .map(({ _key, ...t }) => t); // Remove the _key before inserting
+
+    const totalProvided = transactions.length;
+    const duplicatesSkipped = totalProvided - processedTransactions.length;
+
+    if (processedTransactions.length === 0) {
+      return NextResponse.json({
+        success: true,
+        count: 0,
+        duplicatesSkipped,
+        message: `All ${totalProvided} transactions were duplicates and skipped.`,
+      });
+    }
 
     const { data, error } = await supabase
       .from('transactions')
@@ -99,10 +142,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to import transactions' }, { status: 500 });
     }
 
+    const message = duplicatesSkipped > 0
+      ? `Imported ${data?.length || 0} new transactions (${duplicatesSkipped} duplicates skipped)`
+      : `Imported ${data?.length || 0} transactions`;
+
     return NextResponse.json({
       success: true,
       count: data?.length || 0,
-      message: `Imported ${data?.length || 0} transactions`,
+      duplicatesSkipped,
+      message,
     });
   } catch (error) {
     console.error('Error importing transactions:', error);

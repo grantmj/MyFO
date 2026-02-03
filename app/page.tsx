@@ -62,7 +62,7 @@ export default function Home() {
                           <span className="text-accent text-sm font-medium">M</span>
                         </div>
                         <div className="flex-1">
-                          <p className="text-base text-gray-900 font-medium">MyFO Assistant</p>
+                          <p className="text-base text-gray-900 font-medium">MyFo Assistant</p>
                           <p className="mt-2 text-sm text-gray-800 leading-relaxed">
                             What finances do you need help with today?
                           </p>
@@ -158,12 +158,12 @@ export default function Home() {
           <div className="mt-16 max-w-3xl">
             {[
               {
-                q: "How does MyFO help me budget my semester?",
-                a: "MyFO takes your financial aid disbursements, student worker income, and planned expenses to create a week-by-week spending plan. You'll always know your 'safe to spend' amount and when your money might run out.",
+                q: "How does MyFo help me budget my semester?",
+                a: "MyFo takes your financial aid disbursements, student worker income, and planned expenses to create a week-by-week spending plan. You'll always know your 'safe to spend' amount and when your money might run out.",
               },
               {
                 q: "What does 'can I afford this?' actually show me?",
-                a: "Instead of just yes or no, MyFO shows you the tradeoffs. You'll see how a purchase impacts your runway, what you might need to cut back on, or ways to earn extra to cover it without stress.",
+                a: "Instead of just yes or no, MyFo shows you the tradeoffs. You'll see how a purchase impacts your runway, what you might need to cut back on, or ways to earn extra to cover it without stress.",
               },
               {
                 q: "Is my financial information secure?",
@@ -171,11 +171,11 @@ export default function Home() {
               },
               {
                 q: "How do I import my transactions?",
-                a: "You can upload a CSV from your bank or manually log purchases. MyFO automatically categorizes transactions and updates your budget in real-time.",
+                a: "You can upload a CSV from your bank or manually log purchases. MyFo automatically categorizes transactions and updates your budget in real-time.",
               },
               {
-                q: "What kind of proactive help does MyFO provide?",
-                a: "MyFO sends reminders for planned expenses, alerts you when you're overspending in a category, and suggests relevant scholarships or side gigs when you need extra income.",
+                q: "What kind of proactive help does MyFo provide?",
+                a: "MyFo sends reminders for planned expenses, alerts you when you're overspending in a category, and suggests relevant scholarships or side gigs when you need extra income.",
               },
             ].map((item, i) => (
               <div

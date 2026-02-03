@@ -1,4 +1,4 @@
-// Category definitions for MyFO
+// Category definitions for MyFo
 export const CATEGORIES = {
   RENT: 'rent',
   UTILITIES: 'utilities',

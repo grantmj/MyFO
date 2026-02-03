@@ -93,7 +93,14 @@ export async function GET(request: NextRequest) {
       }))
     );
 
-    return NextResponse.json({ snapshot });
+    // Add semester dates to snapshot
+    const snapshotWithDates = {
+      ...snapshot,
+      startDate: plan.start_date,
+      endDate: plan.end_date,
+    };
+
+    return NextResponse.json({ snapshot: snapshotWithDates });
   } catch (error) {
     console.error('Error calculating budget snapshot:', error);
     return NextResponse.json({ error: 'Failed to calculate budget snapshot' }, { status: 500 });

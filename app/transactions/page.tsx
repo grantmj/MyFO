@@ -392,7 +392,7 @@ export default function TransactionsPage() {
           <p className="text-xs text-muted mb-3">
             Upload a CSV file from your bank. Should include Date, Description, and Amount columns.
           </p>
-          
+
           <div className="space-y-3">
             <input
               ref={fileInputRef}
@@ -462,12 +462,128 @@ export default function TransactionsPage() {
           </div>
         </Card>
 
+        {/* Bank/Credit Card Linking Section */}
+        <Card className="mb-4">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div>
+              <h2 className="text-base font-medium text-foreground mb-1">Connect Your Accounts</h2>
+              <p className="text-xs text-muted">Link your bank or credit card for automatic transaction imports</p>
+            </div>
+            <span style={{
+              padding: '0.25rem 0.75rem',
+              fontSize: '0.65rem',
+              background: '#fef3c7',
+              color: '#92400e',
+              borderRadius: '9999px',
+              fontWeight: 500
+            }}>Coming Soon</span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            {/* Bank Account */}
+            <div style={{
+              padding: '1.25rem',
+              borderRadius: '0.75rem',
+              border: '2px dashed #d1d5db',
+              textAlign: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+              onClick={() => showToast('Bank linking coming soon! Use CSV import for now.', 'info')}
+            >
+              <div style={{
+                width: '3rem',
+                height: '3rem',
+                margin: '0 auto 0.75rem',
+                borderRadius: '50%',
+                background: '#f0fdf4',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <span style={{ fontSize: '1.5rem' }}>🏦</span>
+              </div>
+              <p style={{ fontWeight: 600, color: '#111827', marginBottom: '0.25rem' }}>Bank Account</p>
+              <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Chase, Bank of America, Wells Fargo...</p>
+            </div>
+
+            {/* Credit Card */}
+            <div style={{
+              padding: '1.25rem',
+              borderRadius: '0.75rem',
+              border: '2px dashed #d1d5db',
+              textAlign: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+              onClick={() => showToast('Credit card linking coming soon! Use CSV import for now.', 'info')}
+            >
+              <div style={{
+                width: '3rem',
+                height: '3rem',
+                margin: '0 auto 0.75rem',
+                borderRadius: '50%',
+                background: '#eff6ff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <span style={{ fontSize: '1.5rem' }}>💳</span>
+              </div>
+              <p style={{ fontWeight: 600, color: '#111827', marginBottom: '0.25rem' }}>Credit Card</p>
+              <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Visa, Mastercard, Discover, Amex...</p>
+            </div>
+
+            {/* Statement PDF */}
+            <div style={{
+              padding: '1.25rem',
+              borderRadius: '0.75rem',
+              border: '2px dashed #d1d5db',
+              textAlign: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+              onClick={() => showToast('PDF statement parsing coming soon! Use CSV import for now.', 'info')}
+            >
+              <div style={{
+                width: '3rem',
+                height: '3rem',
+                margin: '0 auto 0.75rem',
+                borderRadius: '50%',
+                background: '#fef2f2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <span style={{ fontSize: '1.5rem' }}>📄</span>
+              </div>
+              <p style={{ fontWeight: 600, color: '#111827', marginBottom: '0.25rem' }}>Upload Statement</p>
+              <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>PDF bank/credit card statements</p>
+            </div>
+          </div>
+
+          <div style={{
+            marginTop: '1rem',
+            padding: '0.75rem',
+            background: '#f0fdf4',
+            borderRadius: '0.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <span style={{ fontSize: '1rem' }}>✨</span>
+            <p style={{ fontSize: '0.8rem', color: '#166534' }}>
+              Connecting accounts enables <strong>auto-categorization</strong> and <strong>real-time budget tracking</strong>
+            </p>
+          </div>
+        </Card>
+
         {/* Transactions Table */}
         <Card>
           <h2 className="text-base font-medium text-foreground mb-3">
             All Transactions ({transactions.length})
           </h2>
-          
+
           {transactions.length === 0 ? (
             <p className="text-sm text-muted">No transactions yet. Import your bank CSV to get started.</p>
           ) : (

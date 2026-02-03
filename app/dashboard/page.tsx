@@ -216,7 +216,13 @@ export default function Dashboard() {
           <div style={{ fontSize: '3.75rem', fontWeight: 700, color: '#111827', marginBottom: '0.5rem' }}>
             <AnimatedNumber value={snapshot.safeToSpendThisWeek} prefix="$" decimals={0} />
           </div>
-          <p style={{ color: '#6b7280' }}>Based on your remaining budget and planned expenses</p>
+          <p style={{ color: '#6b7280', marginBottom: '1rem' }}>Based on your remaining budget and planned expenses</p>
+          <details style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+            <summary style={{ cursor: 'pointer' }}>How is this calculated?</summary>
+            <p style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#f9fafb', borderRadius: '0.5rem', textAlign: 'left' }}>
+              Safe to spend = min(weekly budget remaining, semester funds ÷ weeks left)
+            </p>
+          </details>
         </div>
 
         {/* Key Metrics Grid */}
@@ -397,13 +403,25 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
           {/* Semester Progress with Circular */}
           <div style={cardStyle}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
               Semester Progress
             </h3>
+            {/* Semester Date Bar */}
+            <div style={{ marginBottom: '1.5rem', padding: '0.75rem', background: '#f0fdf4', borderRadius: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                <span>Start: {snapshot.startDate ? format(new Date(snapshot.startDate), 'MMM dd') : 'Jan'}</span>
+                <span style={{ color: '#10b981', fontWeight: 600 }}>Today</span>
+                <span>End: {snapshot.endDate ? format(new Date(snapshot.endDate), 'MMM dd') : 'May'}</span>
+              </div>
+              <div style={{ height: '0.5rem', background: '#e5e7eb', borderRadius: '9999px', position: 'relative' }}>
+                <div style={{ height: '100%', width: `${progressPercentage}%`, background: '#10b981', borderRadius: '9999px' }} />
+                <div style={{ position: 'absolute', left: `${progressPercentage}%`, top: '-0.25rem', width: '1rem', height: '1rem', background: '#10b981', borderRadius: '50%', border: '2px solid white', transform: 'translateX(-50%)' }} />
+              </div>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
               <CircularProgress
                 percentage={progressPercentage}
-                size={140}
+                size={120}
                 strokeWidth={10}
                 label="complete"
               />
@@ -414,7 +432,6 @@ export default function Dashboard() {
                     {snapshot.weeksElapsed} / {snapshot.weeksTotal}
                   </span>
                 </div>
-                <div style={{ height: '1px', backgroundColor: '#e5e7eb', marginBottom: '1rem' }} />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
                     <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Expected Spend</p>
@@ -482,9 +499,14 @@ export default function Dashboard() {
 
           {/* Upcoming Planned Items */}
           <div style={cardStyle}>
-            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
-              Upcoming Planned Items
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827' }}>
+                Planned Expenses
+              </h3>
+              <a href="/transactions" style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 500, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                + Add Item
+              </a>
+            </div>
             {snapshot.plannedNext7Days.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {snapshot.plannedNext7Days.map((item, i) => (
@@ -524,10 +546,11 @@ export default function Dashboard() {
               <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                 <div style={{ width: '4rem', height: '4rem', margin: '0 auto 1rem', borderRadius: '50%', backgroundColor: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <svg style={{ width: '2rem', height: '2rem', color: '#059669' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </div>
-                <p style={{ color: '#4b5563' }}>No planned items in the next 7 days</p>
+                <p style={{ color: '#4b5563', marginBottom: '0.5rem' }}>No planned items yet</p>
+                <a href="/transactions" style={{ fontSize: '0.875rem', color: '#10b981', textDecoration: 'none', fontWeight: 500 }}>Add your first planned expense →</a>
               </div>
             )}
           </div>
@@ -660,7 +683,7 @@ export default function Dashboard() {
             <svg style={{ width: '1.25rem', height: '1.25rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
             </svg>
-            Ask MyFO a Question
+            Ask MyFo a Question
           </a>
         </div>
       </div>

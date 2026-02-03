@@ -40,7 +40,7 @@ function AssistantContent() {
       setMessages([
         {
           role: 'assistant',
-          content: "Hi! I'm MyFO, your financial copilot. Ask me questions like:\n\n• Can I afford to buy a $90 concert ticket?\n• How am I doing on my budget?\n• What should I cut back on?\n• Can I take a trip that costs $400?\n\nI'll give you honest answers based on your actual budget, not guesses!",
+          content: "Hi! I'm MyFo, your financial copilot. Ask me questions like:\n\n• Can I afford to buy a $90 concert ticket?\n• How am I doing on my budget?\n• What should I cut back on?\n• Can I take a trip that costs $400?\n\nI'll give you honest answers based on your actual budget, not guesses!",
         },
       ]);
 
@@ -144,7 +144,7 @@ function AssistantContent() {
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-medium text-foreground">Ask MyFO</h1>
+          <h1 className="text-3xl font-medium text-foreground">Ask MyFo</h1>
           <p className="mt-1 text-sm text-muted">
             Your personal financial copilot - ask me anything about your budget
           </p>
@@ -159,7 +159,7 @@ function AssistantContent() {
                   OpenAI API Key Required
                 </h3>
                 <p className="text-xs text-muted">
-                  To use the MyFO chat assistant, you need to add your OpenAI API key to the <code className="bg-yellow-100 px-1 rounded">.env</code> file:
+                  To use the MyFo chat assistant, you need to add your OpenAI API key to the <code className="bg-yellow-100 px-1 rounded">.env</code> file:
                 </p>
                 <pre className="mt-2 text-xs bg-yellow-100 p-2 rounded overflow-x-auto">
                   OPENAI_API_KEY=sk-your-key-here
@@ -240,7 +240,7 @@ function AssistantContent() {
         {/* Disclaimer */}
         <div className="mt-6 text-center">
           <p className="text-xs text-muted">
-            ⚠️ MyFO is a budgeting tool, not a financial advisor. Recommendations are for educational purposes only.
+            ⚠️ MyFo is a budgeting tool, not a financial advisor. Recommendations are for educational purposes only.
             All calculations are deterministic based on your input data. Always make final decisions based on your own judgment.
           </p>
         </div>

@@ -452,6 +452,146 @@ export default function IncomePage() {
                             </div>
                         </div>
                     )}
+
+                    {/* Job Board Section */}
+                    <div style={{ ...cardStyle, gridColumn: 'span 2' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: '#10b981', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1rem' }}>💼</span>
+                                Job Opportunities
+                            </h3>
+                            <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Mock data for demo</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                            {/* Campus Library Job */}
+                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                                <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <p style={{ fontWeight: 600, color: '#111827' }}>📚 Library Student Assistant</p>
+                                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Hayden Library, ASU</p>
+                                    </div>
+                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#d1fae5', color: '#065f46', borderRadius: '9999px' }}>Flexible</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                    <span>$15/hr</span>
+                                    <span>8-15 hrs/wk</span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setFormType('job');
+                                        setFormName('Library Student Assistant');
+                                        setFormAmount('480');
+                                        setFormFrequency('monthly');
+                                        setFormIsLoan(false);
+                                        setFormNotes('Campus library job, ~8 hrs/week at $15/hr');
+                                        setShowAddModal(true);
+                                    }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#10b981', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                >
+                                    + Add This Job
+                                </button>
+                                <p style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '0.5rem', textAlign: 'center' }}>
+                                    Impact: +$120/wk → Stabilize weekly balance
+                                </p>
+                            </div>
+
+                            {/* Event Staffing */}
+                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                                <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <p style={{ fontWeight: 600, color: '#111827' }}>🎪 Event Staff - Football Games</p>
+                                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Sun Devil Stadium</p>
+                                    </div>
+                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fef3c7', color: '#92400e', borderRadius: '9999px' }}>Seasonal</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                    <span>$17/hr</span>
+                                    <span>4-8 hrs/game</span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setFormType('job');
+                                        setFormName('Event Staff - Football Games');
+                                        setFormAmount('272');
+                                        setFormFrequency('monthly');
+                                        setFormIsLoan(false);
+                                        setFormNotes('~4 games/month, 4 hrs each at $17/hr');
+                                        setShowAddModal(true);
+                                    }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#10b981', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                >
+                                    + Add This Job
+                                </button>
+                                <p style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '0.5rem', textAlign: 'center' }}>
+                                    Impact: +$68/wk → Great for weekend income
+                                </p>
+                            </div>
+
+                            {/* Red Bull Gig */}
+                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                                <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <p style={{ fontWeight: 600, color: '#111827' }}>🥤 Red Bull Campus Rep</p>
+                                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Various campus locations</p>
+                                    </div>
+                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#dbeafe', color: '#1e40af', borderRadius: '9999px' }}>Fun</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                    <span>$16/hr</span>
+                                    <span>5-10 hrs/wk</span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setFormType('job');
+                                        setFormName('Red Bull Campus Rep');
+                                        setFormAmount('320');
+                                        setFormFrequency('monthly');
+                                        setFormIsLoan(false);
+                                        setFormNotes('Tabling and event gigs, ~5 hrs/week at $16/hr');
+                                        setShowAddModal(true);
+                                    }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#10b981', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                >
+                                    + Add This Job
+                                </button>
+                                <p style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '0.5rem', textAlign: 'center' }}>
+                                    Impact: +$80/wk → Free energy drinks included!
+                                </p>
+                            </div>
+
+                            {/* Research Assistant */}
+                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                                <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <p style={{ fontWeight: 600, color: '#111827' }}>🔬 Research Assistant</p>
+                                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Fulton Engineering</p>
+                                    </div>
+                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fce7f3', color: '#9d174d', borderRadius: '9999px' }}>Resume+</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                    <span>$18/hr</span>
+                                    <span>10-15 hrs/wk</span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setFormType('job');
+                                        setFormName('Research Assistant');
+                                        setFormAmount('720');
+                                        setFormFrequency('monthly');
+                                        setFormIsLoan(false);
+                                        setFormNotes('Lab research position, ~10 hrs/week at $18/hr');
+                                        setShowAddModal(true);
+                                    }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#10b981', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                >
+                                    + Add This Job
+                                </button>
+                                <p style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '0.5rem', textAlign: 'center' }}>
+                                    Impact: +$180/wk → Build your career!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

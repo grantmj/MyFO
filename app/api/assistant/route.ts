@@ -125,7 +125,7 @@ async function executeFunction(name: string, args: any, userId: string, planId: 
 }
 
 /**
- * POST - Chat with MyFO assistant
+ * POST - Chat with MyFo assistant
  */
 export async function POST(request: NextRequest) {
   try {
@@ -241,7 +241,7 @@ PURCHASE EVALUATION for $${purchaseAmount}:
 ` : ''}
 `;
 
-    const systemPrompt = `You are MyFO (My Financial Officer), a helpful student financial assistant. 
+    const systemPrompt = `You are MyFo (My Financial Officer), a helpful student financial assistant. 
 
 IMPORTANT: You have the ability to UPDATE THE DATABASE when the user wants to change their financial info.
 - If they say they have a different loan amount, USE update_plan to change it

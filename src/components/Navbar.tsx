@@ -8,7 +8,7 @@ const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/income", label: "Income" },
   { href: "/transactions", label: "Transactions" },
-  { href: "/assistant", label: "Ask MyFO" },
+  { href: "/assistant", label: "Ask MyFo" },
 ];
 
 export default function Navbar() {
@@ -31,7 +31,7 @@ export default function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2">
-            <span className="text-lg font-semibold text-gray-900">MyFO</span>
+            <span className="text-lg font-semibold text-gray-900">MyFo</span>
           </Link>
 
           <div className="flex items-center gap-4">

@@ -28,6 +28,8 @@ export interface BudgetSnapshot {
   weeksElapsed: number;
   expectedSpendToDate: number;
   actualSpendToDate: number;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 export interface OnboardingData {

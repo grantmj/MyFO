@@ -5,7 +5,7 @@ export default function Logo({ className = "" }: { className?: string }) {
     <Link
       href="/"
       className={`flex items-center gap-2.5 transition-opacity duration-150 hover:opacity-80 ${className}`}
-      aria-label="MyFO home"
+      aria-label="MyFo home"
     >
       <svg
         width="36"
@@ -53,7 +53,7 @@ export default function Logo({ className = "" }: { className?: string }) {
           $
         </text>
       </svg>
-      <span className="text-lg font-semibold text-foreground">MyFO</span>
+      <span className="text-lg font-semibold text-foreground">MyFo</span>
     </Link>
   );
 }

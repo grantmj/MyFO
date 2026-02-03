@@ -3,7 +3,7 @@ import "./globals.css";
 import Layout from "@/components/Layout";
 
 export const metadata: Metadata = {
-  title: "MyFO",
+  title: "MyFo",
   description: "My Financial Officer - Student financial health copilot",
 };
 

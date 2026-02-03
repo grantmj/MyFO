@@ -197,31 +197,35 @@ export default function TransactionsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-medium text-foreground">Transactions</h1>
-          <p className="mt-1 text-sm text-muted">Import and manage your spending</p>
+        <div className="mb-6">
+          <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>
+            Transactions
+          </h1>
+          <p style={{ marginTop: '0.5rem', color: '#6b7280' }}>
+            Import and manage your spending
+          </p>
         </div>
 
         {/* CSV Import Section */}
-        <Card className="mb-6">
-          <h2 className="text-lg font-medium text-foreground mb-4">Import from CSV</h2>
-          <p className="text-sm text-muted mb-4">
+        <Card className="mb-4">
+          <h2 className="text-base font-medium text-foreground mb-2">Import from CSV</h2>
+          <p className="text-xs text-muted mb-3">
             Upload a CSV file from your bank. Should include Date, Description, and Amount columns.
           </p>
           
-          <div className="space-y-4">
+          <div className="space-y-3">
             <input
               ref={fileInputRef}
               type="file"
               accept=".csv"
               onChange={handleFileSelect}
-              className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-accent file:text-white hover:file:bg-accent/90"
+              className="block w-full text-xs text-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-accent file:text-white hover:file:bg-accent/90"
             />
 
             {showColumnMapper && (
-              <div className="pt-4 border-t border-border">
-                <h3 className="text-sm font-medium text-foreground mb-3">Map CSV Columns</h3>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="pt-3 border-t border-border">
+                <h3 className="text-xs font-medium text-foreground mb-2">Map CSV Columns</h3>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   <Select
                     label="Date Column"
                     value={dateColumn}
@@ -250,7 +254,7 @@ export default function TransactionsPage() {
                     ]}
                   />
                 </div>
-                <div className="mt-3">
+                <div className="mt-2">
                   <Select
                     label="Amount Convention"
                     value={amountConvention}
@@ -261,7 +265,7 @@ export default function TransactionsPage() {
                     ]}
                   />
                 </div>
-                <div className="mt-4 flex gap-2">
+                <div className="mt-3 flex gap-2">
                   <Button
                     variant="primary"
                     onClick={() => processCSV(csvData, dateColumn, descColumn, amountColumn)}
@@ -280,7 +284,7 @@ export default function TransactionsPage() {
 
         {/* Transactions Table */}
         <Card>
-          <h2 className="text-lg font-medium text-foreground mb-4">
+          <h2 className="text-base font-medium text-foreground mb-3">
             All Transactions ({transactions.length})
           </h2>
           

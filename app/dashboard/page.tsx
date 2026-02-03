@@ -122,9 +122,9 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', border: '4px solid #e0e7ff', borderTopColor: '#6366f1', animation: 'spin 1s linear infinite' }} />
+          <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', border: '4px solid #e5e7eb', borderTopColor: '#14b8a6', animation: 'spin 1s linear infinite' }} />
           <p style={{ color: '#4b5563', fontWeight: 500 }}>Loading your finances...</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -139,12 +139,12 @@ export default function Dashboard() {
   const statusColor =
     snapshot.status === 'ahead' ? '#059669' :
       snapshot.status === 'behind' ? '#dc2626' :
-        '#4f46e5';
+        '#14b8a6';
 
   const statusBg =
-    snapshot.status === 'ahead' ? 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)' :
-      snapshot.status === 'behind' ? 'linear-gradient(135deg, #ef4444 0%, #f43f5e 100%)' :
-        'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
+    snapshot.status === 'ahead' ? '#10b981' :
+      snapshot.status === 'behind' ? '#ef4444' :
+        '#14b8a6';
 
   const statusText =
     snapshot.status === 'ahead' ? 'Ahead of Plan' :
@@ -162,16 +162,16 @@ export default function Dashboard() {
     border: '1px solid #f3f4f6'
   };
 
-  const gradientColors = [
-    'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-    'linear-gradient(135deg, #10b981 0%, #0d9488 100%)',
-    'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)',
-    'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
-    'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',
+  const simpleColors = [
+    '#14b8a6',
+    '#10b981',
+    '#f59e0b',
+    '#ec4899',
+    '#06b6d4',
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #eef2ff 0%, #ffffff 50%, #faf5ff 100%)' }}>
+    <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
       <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1rem' }}>
         {/* Header */}
         <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -184,12 +184,12 @@ export default function Dashboard() {
             style={{
               padding: '0.75rem 1.5rem',
               borderRadius: '0.75rem',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: '#14b8a6',
               color: 'white',
               fontWeight: 600,
               border: 'none',
               cursor: 'pointer',
-              boxShadow: '0 4px 6px rgba(99, 102, 241, 0.25)'
+              boxShadow: '0 4px 6px rgba(20, 184, 166, 0.25)'
             }}
           >
             Load Demo Data
@@ -204,13 +204,13 @@ export default function Dashboard() {
             gap: '0.5rem',
             padding: '0.375rem 1rem',
             borderRadius: '9999px',
-            backgroundColor: '#eef2ff',
-            color: '#4f46e5',
+            backgroundColor: '#ccfbf1',
+            color: '#0f766e',
             fontSize: '0.875rem',
             fontWeight: 500,
             marginBottom: '1rem'
           }}>
-            <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', backgroundColor: '#6366f1', animation: 'pulse 2s infinite' }} />
+            <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', backgroundColor: '#14b8a6', animation: 'pulse 2s infinite' }} />
             Safe to Spend This Week
           </div>
           <div style={{ fontSize: '3.75rem', fontWeight: 700, color: '#111827', marginBottom: '0.5rem' }}>
@@ -241,7 +241,7 @@ export default function Dashboard() {
                 width: '3rem',
                 height: '3rem',
                 borderRadius: '0.75rem',
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                background: '#14b8a6',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -305,7 +305,7 @@ export default function Dashboard() {
                 width: '3rem',
                 height: '3rem',
                 borderRadius: '0.75rem',
-                background: 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)',
+                background: '#10b981',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -327,10 +327,10 @@ export default function Dashboard() {
                   width: '2rem',
                   height: '2rem',
                   borderRadius: '0.5rem',
-                  background: financialHealth.healthLevel === 'excellent' ? 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)' :
-                    financialHealth.healthLevel === 'good' ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' :
-                      financialHealth.healthLevel === 'fair' ? 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)' :
-                        'linear-gradient(135deg, #ef4444 0%, #f43f5e 100%)',
+                  background: financialHealth.healthLevel === 'excellent' ? '#10b981' :
+                    financialHealth.healthLevel === 'good' ? '#14b8a6' :
+                      financialHealth.healthLevel === 'fair' ? '#f59e0b' :
+                        '#ef4444',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -342,7 +342,7 @@ export default function Dashboard() {
                 </span>
                 Financial Health
               </h3>
-              <a href="/income" style={{ fontSize: '0.875rem', color: '#6366f1', fontWeight: 500, textDecoration: 'none' }}>
+              <a href="/income" style={{ fontSize: '0.875rem', color: '#14b8a6', fontWeight: 500, textDecoration: 'none' }}>
                 Manage Income →
               </a>
             </div>
@@ -382,9 +382,9 @@ export default function Dashboard() {
               <div style={{
                 marginTop: '1rem',
                 padding: '0.75rem 1rem',
-                backgroundColor: '#eef2ff',
+                backgroundColor: '#f0fdf4',
                 borderRadius: '0.5rem',
-                borderLeft: '3px solid #6366f1'
+                borderLeft: '3px solid #10b981'
               }}>
                 <p style={{ fontSize: '0.875rem', color: '#374151', lineHeight: 1.5 }}>
                   {financialHealth.loanRepaymentProjection.message}
@@ -418,7 +418,7 @@ export default function Dashboard() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
                     <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Expected Spend</p>
-                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#4f46e5' }}>
+                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#14b8a6' }}>
                       <AnimatedNumber value={snapshot.expectedSpendToDate} prefix="$" decimals={0} />
                     </p>
                   </div>
@@ -456,7 +456,7 @@ export default function Dashboard() {
                         <div
                           style={{
                             height: '100%',
-                            background: gradientColors[i % gradientColors.length],
+                            backgroundColor: simpleColors[i % simpleColors.length],
                             borderRadius: '9999px',
                             transition: 'width 0.7s ease',
                             width: `${percentage}%`
@@ -497,7 +497,7 @@ export default function Dashboard() {
                         width: '2.5rem',
                         height: '2.5rem',
                         borderRadius: '0.5rem',
-                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                        background: '#14b8a6',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -514,7 +514,7 @@ export default function Dashboard() {
                         </p>
                       </div>
                     </div>
-                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#4f46e5' }}>
+                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#14b8a6' }}>
                       ${item.amount.toFixed(0)}
                     </p>
                   </div>
@@ -538,7 +538,7 @@ export default function Dashboard() {
               <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827' }}>
                 FAFSA Readiness
               </h3>
-              <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '9999px', backgroundColor: '#eef2ff', color: '#4f46e5', fontWeight: 500 }}>
+              <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '9999px', backgroundColor: '#ccfbf1', color: '#0f766e', fontWeight: 500 }}>
                 {fafsaChecklist ? Object.values(fafsaChecklist).filter(Boolean).length : 0}/8 Complete
               </span>
             </div>
@@ -609,7 +609,7 @@ export default function Dashboard() {
                 href="https://studentaid.gov/h/apply-for-aid/fafsa"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#4f46e5', fontWeight: 500, textDecoration: 'none' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#14b8a6', fontWeight: 500, textDecoration: 'none' }}
               >
                 Learn more about FAFSA
                 <svg style={{ width: '1rem', height: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -630,11 +630,11 @@ export default function Dashboard() {
               gap: '0.5rem',
               padding: '0.75rem 1.5rem',
               borderRadius: '0.75rem',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: '#14b8a6',
               color: 'white',
               fontWeight: 600,
               textDecoration: 'none',
-              boxShadow: '0 4px 6px rgba(99, 102, 241, 0.25)'
+              boxShadow: '0 4px 6px rgba(20, 184, 166, 0.25)'
             }}
           >
             <svg style={{ width: '1.25rem', height: '1.25rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">

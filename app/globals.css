@@ -29,7 +29,7 @@ body {
 
 /* Focus ring - consistent across interactive elements */
 :focus-visible {
-  outline: 2px solid theme("colors.accent");
+  outline: 2px solid #76B89F;
   outline-offset: 2px;
 }
 

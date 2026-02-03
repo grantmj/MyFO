@@ -306,15 +306,121 @@ export default function IncomePage() {
 
     return (
         <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
-            <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1rem' }}>
+            <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes scaleIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                }
+                .page-container {
+                    animation: fadeIn 0.4s ease-out;
+                }
+                .header-section {
+                    animation: fadeInUp 0.5s ease-out;
+                }
+                .card-animate {
+                    animation: scaleIn 0.5s ease-out;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .card-animate:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.15);
+                }
+                .btn-primary {
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                    position: relative;
+                    overflow: hidden;
+                }
+                .btn-primary:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 16px rgba(118, 184, 159, 0.35);
+                }
+                .btn-primary:active {
+                    transform: translateY(0) scale(0.98);
+                }
+                .btn-secondary {
+                    transition: all 0.2s ease;
+                }
+                .btn-secondary:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                }
+                .btn-secondary:active {
+                    transform: scale(0.95);
+                }
+                .income-item {
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .income-item:hover {
+                    transform: translateX(4px);
+                    background: #f3f4f6 !important;
+                }
+                .opportunity-card {
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .opportunity-card:hover {
+                    transform: translateX(4px);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                }
+                .job-card {
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .job-card:hover {
+                    transform: translateY(-4px) scale(1.02);
+                    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+                }
+                .modal-overlay {
+                    animation: fadeIn 0.2s ease-out;
+                }
+                .modal-content {
+                    animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                }
+                .progress-bar {
+                    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .score-circle {
+                    animation: fadeIn 0.6s ease-out;
+                }
+                .stat-card {
+                    transition: all 0.3s ease;
+                }
+                .stat-card:hover {
+                    transform: scale(1.05);
+                }
+                .badge {
+                    transition: all 0.2s ease;
+                }
+                .badge:hover {
+                    transform: scale(1.1);
+                }
+                .link-btn {
+                    transition: all 0.2s ease;
+                }
+                .link-btn:hover {
+                    transform: translateX(2px);
+                }
+            `}</style>
+            <div className="page-container" style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1rem' }}>
                 {/* Header */}
-                <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div className="header-section" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
                         <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>Income & Funding</h1>
                         <p style={{ marginTop: '0.5rem', color: '#6b7280' }}>Track all your money sources</p>
                     </div>
                     <button
                         onClick={openAddModal}
+                        className="btn-primary"
                         style={{
                             padding: '0.75rem 1.5rem',
                             borderRadius: '0.75rem',
@@ -332,8 +438,8 @@ export default function IncomePage() {
 
                 {/* Financial Health Score */}
                 {financialHealth && (
-                    <div style={{ ...cardStyle, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                        <div style={{
+                    <div className="card-animate" style={{ ...cardStyle, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                        <div className="score-circle" style={{
                             width: '100px',
                             height: '100px',
                             borderRadius: '50%',
@@ -380,7 +486,7 @@ export default function IncomePage() {
                             {financialHealth.tips.length > 0 && (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                     {financialHealth.tips.map((tip, i) => (
-                                        <span key={i} style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem', borderRadius: '9999px', backgroundColor: '#E8F3EF', color: '#2d5a44' }}>
+                                        <span key={i} className="badge" style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem', borderRadius: '9999px', backgroundColor: '#E8F3EF', color: '#2d5a44' }}>
                                             {tip}
                                         </span>
                                     ))}
@@ -392,7 +498,7 @@ export default function IncomePage() {
 
                 <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))' }}>
                     {/* Income Sources List */}
-                    <div style={cardStyle}>
+                    <div className="card-animate" style={cardStyle}>
                         <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
                             Net Income ({incomeSources.length})
                         </h3>
@@ -401,6 +507,7 @@ export default function IncomePage() {
                                 {incomeSources.map((source) => (
                                     <div
                                         key={source.id}
+                                        className="income-item"
                                         style={{
                                             display: 'flex',
                                             alignItems: 'center',
@@ -438,8 +545,8 @@ export default function IncomePage() {
                                             <span style={{ fontWeight: 700, color: source.isLoan || source.amount < 0 ? '#ef4444' : '#10b981', fontSize: '1rem' }}>
                                                 ${source.amount.toFixed(0)}
                                             </span>
-                                            <button onClick={() => openEditModal(source)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', backgroundColor: 'white', cursor: 'pointer' }}>Edit</button>
-                                            <button onClick={() => handleDelete(source.id)} style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #fecaca', borderRadius: '0.375rem', backgroundColor: '#fef2f2', color: '#dc2626', cursor: 'pointer' }}>×</button>
+                                            <button onClick={() => openEditModal(source)} className="btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.375rem', backgroundColor: 'white', cursor: 'pointer' }}>Edit</button>
+                                            <button onClick={() => handleDelete(source.id)} className="btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #fecaca', borderRadius: '0.375rem', backgroundColor: '#fef2f2', color: '#dc2626', cursor: 'pointer' }}>×</button>
                                         </div>
                                     </div>
                                 ))}
@@ -455,13 +562,14 @@ export default function IncomePage() {
                     </div>
 
                     {/* Emergency Fund */}
-                    <div style={cardStyle}>
+                    <div className="card-animate" style={cardStyle}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827' }}>
                                 Emergency Fund
                             </h3>
                             <button
                                 onClick={() => setEfEditing(!efEditing)}
+                                className="btn-secondary"
                                 style={{ fontSize: '0.75rem', color: '#76B89F', background: 'none', border: 'none', cursor: 'pointer' }}
                             >
                                 {efEditing ? 'Cancel' : 'Edit'}
@@ -499,6 +607,7 @@ export default function IncomePage() {
                                 </div>
                                 <button
                                     onClick={saveEmergencyFund}
+                                    className="btn-primary"
                                     style={{ padding: '0.75rem', borderRadius: '0.5rem', background: '#10b981', color: 'white', fontWeight: 600, border: 'none', cursor: 'pointer' }}
                                 >
                                     Save
@@ -515,12 +624,12 @@ export default function IncomePage() {
                                     </div>
                                     <div style={{ height: '0.75rem', backgroundColor: '#e5e7eb', borderRadius: '9999px', overflow: 'hidden' }}>
                                         <div
+                                            className="progress-bar"
                                             style={{
                                                 height: '100%',
                                                 backgroundColor: '#10b981',
                                                 borderRadius: '9999px',
-                                                width: `${Math.min(100, (parseFloat(efCurrent) / parseFloat(efTarget)) * 100)}%`,
-                                                transition: 'width 0.5s ease'
+                                                width: `${Math.min(100, (parseFloat(efCurrent) / parseFloat(efTarget)) * 100)}%`
                                             }}
                                         />
                                     </div>
@@ -535,21 +644,21 @@ export default function IncomePage() {
 
                     {/* Loan Summary */}
                     {financialHealth?.loanRepaymentProjection && (
-                        <div style={{ ...cardStyle, gridColumn: 'span 2' }}>
+                        <div className="card-animate" style={{ ...cardStyle, gridColumn: 'span 2' }}>
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <span style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: '#ef4444', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.875rem' }}>$</span>
                                 Loan Repayment Projection
                             </h3>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
-                                <div style={{ textAlign: 'center', padding: '1rem', backgroundColor: '#fef2f2', borderRadius: '0.75rem' }}>
+                                <div className="stat-card" style={{ textAlign: 'center', padding: '1rem', backgroundColor: '#fef2f2', borderRadius: '0.75rem' }}>
                                     <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#dc2626' }}>${financialHealth.loanRepaymentProjection.totalLoanAmount.toFixed(0)}</p>
                                     <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Total Loans</p>
                                 </div>
-                                <div style={{ textAlign: 'center', padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: '0.75rem' }}>
+                                <div className="stat-card" style={{ textAlign: 'center', padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: '0.75rem' }}>
                                     <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#16a34a' }}>${financialHealth.loanRepaymentProjection.projectedSavings.toFixed(0)}</p>
                                     <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Projected Savings</p>
                                 </div>
-                                <div style={{ textAlign: 'center', padding: '1rem', backgroundColor: '#E8F3EF', borderRadius: '0.75rem' }}>
+                                <div className="stat-card" style={{ textAlign: 'center', padding: '1rem', backgroundColor: '#E8F3EF', borderRadius: '0.75rem' }}>
                                     <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#2d5a44' }}>{financialHealth.loanRepaymentProjection.percentPayable.toFixed(0)}%</p>
                                     <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Payable This Semester</p>
                                 </div>
@@ -562,17 +671,17 @@ export default function IncomePage() {
 
                     {/* My Applications Section */}
                     {opportunities.length > 0 && (
-                        <div style={{ ...cardStyle, gridColumn: 'span 2' }}>
+                        <div className="card-animate" style={{ ...cardStyle, gridColumn: 'span 2' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                                 <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <span style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: '#6366f1', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1rem' }}>📋</span>
                                     My Applications
                                 </h3>
                                 <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.75rem' }}>
-                                    <span style={{ padding: '0.25rem 0.5rem', background: '#d1fae5', color: '#065f46', borderRadius: '9999px' }}>
+                                    <span className="badge" style={{ padding: '0.25rem 0.5rem', background: '#d1fae5', color: '#065f46', borderRadius: '9999px' }}>
                                         {opportunities.filter(o => o.status === 'received').length} Received
                                     </span>
-                                    <span style={{ padding: '0.25rem 0.5rem', background: '#fef3c7', color: '#92400e', borderRadius: '9999px' }}>
+                                    <span className="badge" style={{ padding: '0.25rem 0.5rem', background: '#fef3c7', color: '#92400e', borderRadius: '9999px' }}>
                                         {opportunities.filter(o => o.status === 'applied' || o.status === 'interviewing').length} Pending
                                     </span>
                                 </div>
@@ -581,6 +690,7 @@ export default function IncomePage() {
                                 {opportunities.map((opp) => (
                                     <div
                                         key={opp.id}
+                                        className="opportunity-card"
                                         style={{
                                             padding: '1rem',
                                             borderRadius: '0.75rem',
@@ -611,6 +721,7 @@ export default function IncomePage() {
                                                     href={opp.apply_url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
+                                                    className="link-btn"
                                                     style={{ padding: '0.375rem 0.75rem', fontSize: '0.75rem', background: '#e0e7ff', color: '#3730a3', borderRadius: '0.375rem', textDecoration: 'none', fontWeight: 500 }}
                                                 >
                                                     Apply →
@@ -652,7 +763,7 @@ export default function IncomePage() {
                     )}
 
                     {/* Job Board Section */}
-                    <div style={{ ...cardStyle, gridColumn: 'span 2' }}>
+                    <div className="card-animate" style={{ ...cardStyle, gridColumn: 'span 2' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <span style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: '#76B89F', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1rem' }}>💼</span>
@@ -662,7 +773,7 @@ export default function IncomePage() {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
                             {/* Campus Library Job */}
-                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                            <div className="job-card" style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
                                 <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                     <div>
                                         <p style={{ fontWeight: 600, color: '#111827' }}>📚 Library Student Assistant</p>
@@ -679,6 +790,7 @@ export default function IncomePage() {
                                         href="https://students.asu.edu/employment"
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        className="link-btn"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#e0e7ff', color: '#3730a3', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
                                     >
                                         View Listing →
@@ -695,6 +807,7 @@ export default function IncomePage() {
                                             status: 'saved',
                                             notes: 'Campus library job, ~8-15 hrs/week at $15/hr',
                                         })}
+                                        className="btn-primary"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                     >
                                         + Track
@@ -706,13 +819,13 @@ export default function IncomePage() {
                             </div>
 
                             {/* Event Staffing */}
-                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                            <div className="job-card" style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
                                 <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                     <div>
                                         <p style={{ fontWeight: 600, color: '#111827' }}>🎪 Event Staff - Football Games</p>
                                         <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Sun Devil Stadium</p>
                                     </div>
-                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fef3c7', color: '#92400e', borderRadius: '9999px' }}>Seasonal</span>
+                                    <span className="badge" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fef3c7', color: '#92400e', borderRadius: '9999px' }}>Seasonal</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
                                     <span>$17/hr</span>
@@ -723,6 +836,7 @@ export default function IncomePage() {
                                         href="https://sundevilstadium.asu.edu/jobs"
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        className="link-btn"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#e0e7ff', color: '#3730a3', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
                                     >
                                         View Listing →
@@ -739,6 +853,7 @@ export default function IncomePage() {
                                             status: 'saved',
                                             notes: '~4 games/month, 4 hrs each at $17/hr',
                                         })}
+                                        className="btn-primary"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                     >
                                         + Track
@@ -750,13 +865,13 @@ export default function IncomePage() {
                             </div>
 
                             {/* Red Bull Gig */}
-                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                            <div className="job-card" style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
                                 <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                     <div>
                                         <p style={{ fontWeight: 600, color: '#111827' }}>🥤 Red Bull Campus Rep</p>
                                         <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Various campus locations</p>
                                     </div>
-                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#dbeafe', color: '#1e40af', borderRadius: '9999px' }}>Fun</span>
+                                    <span className="badge" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#dbeafe', color: '#1e40af', borderRadius: '9999px' }}>Fun</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
                                     <span>$16/hr</span>
@@ -767,6 +882,7 @@ export default function IncomePage() {
                                         href="https://jobs.redbull.com/us-en/student-marketeer"
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        className="link-btn"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#e0e7ff', color: '#3730a3', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
                                     >
                                         View Listing →
@@ -783,6 +899,7 @@ export default function IncomePage() {
                                             status: 'saved',
                                             notes: 'Tabling and event gigs, ~5-10 hrs/week at $16/hr',
                                         })}
+                                        className="btn-primary"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                     >
                                         + Track
@@ -794,13 +911,13 @@ export default function IncomePage() {
                             </div>
 
                             {/* Research Assistant */}
-                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                            <div className="job-card" style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
                                 <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                     <div>
                                         <p style={{ fontWeight: 600, color: '#111827' }}>🔬 Research Assistant</p>
                                         <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Fulton Engineering</p>
                                     </div>
-                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fce7f3', color: '#9d174d', borderRadius: '9999px' }}>Resume+</span>
+                                    <span className="badge" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fce7f3', color: '#9d174d', borderRadius: '9999px' }}>Resume+</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
                                     <span>$18/hr</span>
@@ -811,6 +928,7 @@ export default function IncomePage() {
                                         href="https://students.asu.edu/employment"
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        className="link-btn"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#e0e7ff', color: '#3730a3', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
                                     >
                                         View Listing →
@@ -827,6 +945,7 @@ export default function IncomePage() {
                                             status: 'saved',
                                             notes: 'Lab research position, ~10-15 hrs/week at $18/hr',
                                         })}
+                                        className="btn-primary"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                     >
                                         + Track
@@ -840,7 +959,7 @@ export default function IncomePage() {
                     </div>
 
                     {/* Scholarship Opportunities Section */}
-                    <div style={{ ...cardStyle, gridColumn: 'span 2' }}>
+                    <div className="card-animate" style={{ ...cardStyle, gridColumn: 'span 2' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <span style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: '#f59e0b', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1rem' }}>🎓</span>
@@ -850,13 +969,13 @@ export default function IncomePage() {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
                             {/* General ASU Scholarship */}
-                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                            <div className="job-card" style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
                                 <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                     <div>
                                         <p style={{ fontWeight: 600, color: '#111827' }}>🌟 ASU General Scholarship</p>
                                         <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Office of Scholarships & Aid</p>
                                     </div>
-                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#d1fae5', color: '#065f46', borderRadius: '9999px' }}>Open Now</span>
+                                    <span className="badge" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#d1fae5', color: '#065f46', borderRadius: '9999px' }}>Open Now</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
                                     <span style={{ fontWeight: 600, color: '#f59e0b' }}>$500-$2,000</span>
@@ -867,6 +986,7 @@ export default function IncomePage() {
                                         href="https://students.asu.edu/scholarships"
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        className="link-btn"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#fef3c7', color: '#92400e', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
                                     >
                                         Apply →
@@ -882,6 +1002,7 @@ export default function IncomePage() {
                                             apply_url: 'https://students.asu.edu/scholarships',
                                             status: 'saved',
                                         })}
+                                        className="btn-primary"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#f59e0b', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                     >
                                         + Track
@@ -893,13 +1014,13 @@ export default function IncomePage() {
                             </div>
 
                             {/* Essay Contest */}
-                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                            <div className="job-card" style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
                                 <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                     <div>
                                         <p style={{ fontWeight: 600, color: '#111827' }}>✍️ "Why College" Essay Contest</p>
                                         <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>National Essay Competition</p>
                                     </div>
-                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fef3c7', color: '#92400e', borderRadius: '9999px' }}>500 words</span>
+                                    <span className="badge" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fef3c7', color: '#92400e', borderRadius: '9999px' }}>500 words</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
                                     <span style={{ fontWeight: 600, color: '#f59e0b' }}>$750</span>
@@ -910,6 +1031,7 @@ export default function IncomePage() {
                                         href="https://scholarships.com"
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        className="link-btn"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#fef3c7', color: '#92400e', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
                                     >
                                         Apply →
@@ -925,6 +1047,7 @@ export default function IncomePage() {
                                             status: 'saved',
                                             notes: 'Rolling deadline - 500 word essay',
                                         })}
+                                        className="btn-primary"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#f59e0b', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                     >
                                         + Track
@@ -936,13 +1059,13 @@ export default function IncomePage() {
                             </div>
 
                             {/* STEM Scholarship */}
-                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                            <div className="job-card" style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
                                 <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                     <div>
                                         <p style={{ fontWeight: 600, color: '#111827' }}>🔬 STEM Excellence Award</p>
                                         <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Fulton Schools of Engineering</p>
                                     </div>
-                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#dbeafe', color: '#1e40af', borderRadius: '9999px' }}>STEM Only</span>
+                                    <span className="badge" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#dbeafe', color: '#1e40af', borderRadius: '9999px' }}>STEM Only</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
                                     <span style={{ fontWeight: 600, color: '#f59e0b' }}>$1,500</span>
@@ -953,6 +1076,7 @@ export default function IncomePage() {
                                         href="https://engineering.asu.edu/scholarships"
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        className="link-btn"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#fef3c7', color: '#92400e', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
                                     >
                                         Apply →
@@ -968,6 +1092,7 @@ export default function IncomePage() {
                                             apply_url: 'https://engineering.asu.edu/scholarships',
                                             status: 'saved',
                                         })}
+                                        className="btn-primary"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#f59e0b', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                     >
                                         + Track
@@ -979,13 +1104,13 @@ export default function IncomePage() {
                             </div>
 
                             {/* First-Gen Scholarship */}
-                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                            <div className="job-card" style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
                                 <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                     <div>
                                         <p style={{ fontWeight: 600, color: '#111827' }}>💪 First-Gen Student Award</p>
                                         <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>ASU Student Success Office</p>
                                     </div>
-                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fce7f3', color: '#9d174d', borderRadius: '9999px' }}>Identity</span>
+                                    <span className="badge" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fce7f3', color: '#9d174d', borderRadius: '9999px' }}>Identity</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
                                     <span style={{ fontWeight: 600, color: '#f59e0b' }}>$1,000</span>
@@ -996,6 +1121,7 @@ export default function IncomePage() {
                                         href="https://students.asu.edu/first-generation"
                                         target="_blank"
                                         rel="noopener noreferrer"
+                                        className="link-btn"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#fef3c7', color: '#92400e', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
                                     >
                                         Apply →
@@ -1011,6 +1137,7 @@ export default function IncomePage() {
                                             apply_url: 'https://students.asu.edu/first-generation',
                                             status: 'saved',
                                         })}
+                                        className="btn-primary"
                                         style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#f59e0b', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                     >
                                         + Track
@@ -1024,7 +1151,7 @@ export default function IncomePage() {
                     </div>
 
                     {/* Events Section */}
-                    <div style={{ ...cardStyle, gridColumn: 'span 2' }}>
+                    <div className="card-animate" style={{ ...cardStyle, gridColumn: 'span 2' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <span style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: '#9b8fc9', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1rem' }}>🎉</span>
@@ -1034,13 +1161,13 @@ export default function IncomePage() {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
                             {/* Formula 1 Austin */}
-                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                            <div className="job-card" style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
                                 <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                     <div>
                                         <p style={{ fontWeight: 600, color: '#111827' }}>🏎️ Formula 1 Austin 2026</p>
                                         <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Circuit of the Americas</p>
                                     </div>
-                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fee2e2', color: '#991b1b', borderRadius: '9999px' }}>Racing</span>
+                                    <span className="badge" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fee2e2', color: '#991b1b', borderRadius: '9999px' }}>Racing</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
                                     <span style={{ fontWeight: 600, color: '#dc2626' }}>$250</span>
@@ -1056,6 +1183,7 @@ export default function IncomePage() {
                                         setFormNotes('F1 race weekend ticket - one-time event');
                                         setShowAddModal(true);
                                     }}
+                                    className="btn-primary"
                                     style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                 >
                                     + Add This Event
@@ -1066,13 +1194,13 @@ export default function IncomePage() {
                             </div>
 
                             {/* Decadence 2026 */}
-                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                            <div className="job-card" style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
                                 <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                     <div>
                                         <p style={{ fontWeight: 600, color: '#111827' }}>🎶 Decadence 2026</p>
                                         <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Phoenix Convention Center</p>
                                     </div>
-                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fce7f3', color: '#831843', borderRadius: '9999px' }}>Rave</span>
+                                    <span className="badge" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fce7f3', color: '#831843', borderRadius: '9999px' }}>Rave</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
                                     <span style={{ fontWeight: 600, color: '#dc2626' }}>$200</span>
@@ -1088,6 +1216,7 @@ export default function IncomePage() {
                                         setFormNotes('NYE rave ticket - one-time event');
                                         setShowAddModal(true);
                                     }}
+                                    className="btn-primary"
                                     style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                 >
                                     + Add This Event
@@ -1098,13 +1227,13 @@ export default function IncomePage() {
                             </div>
 
                             {/* Snowbowl Trip */}
-                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                            <div className="job-card" style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
                                 <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                     <div>
                                         <p style={{ fontWeight: 600, color: '#111827' }}>⛷️ Snowbowl Trip</p>
                                         <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Flagstaff, Arizona</p>
                                     </div>
-                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#dbeafe', color: '#1e3a8a', borderRadius: '9999px' }}>Ski Trip</span>
+                                    <span className="badge" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#dbeafe', color: '#1e3a8a', borderRadius: '9999px' }}>Ski Trip</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
                                     <span style={{ fontWeight: 600, color: '#dc2626' }}>$200</span>
@@ -1120,6 +1249,7 @@ export default function IncomePage() {
                                         setFormNotes('Ski trip with friends - one-time event');
                                         setShowAddModal(true);
                                     }}
+                                    className="btn-primary"
                                     style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                 >
                                     + Add This Event
@@ -1130,13 +1260,13 @@ export default function IncomePage() {
                             </div>
 
                             {/* Arizona State Fair */}
-                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                            <div className="job-card" style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
                                 <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                                     <div>
                                         <p style={{ fontWeight: 600, color: '#111827' }}>🎡 Arizona State Fair</p>
                                         <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Phoenix, AZ</p>
                                     </div>
-                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fef3c7', color: '#78350f', borderRadius: '9999px' }}>Fair</span>
+                                    <span className="badge" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fef3c7', color: '#78350f', borderRadius: '9999px' }}>Fair</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
                                     <span style={{ fontWeight: 600, color: '#dc2626' }}>$50</span>
@@ -1152,6 +1282,7 @@ export default function IncomePage() {
                                         setFormNotes('State fair visit - one-time event');
                                         setShowAddModal(true);
                                     }}
+                                    className="btn-primary"
                                     style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                 >
                                     + Add This Event
@@ -1167,8 +1298,8 @@ export default function IncomePage() {
 
             {/* Add/Edit Modal */}
             {showAddModal && (
-                <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-                    <div style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '2rem', width: '100%', maxWidth: '28rem', maxHeight: '90vh', overflowY: 'auto' }}>
+                <div className="modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+                    <div className="modal-content" style={{ backgroundColor: 'white', borderRadius: '1rem', padding: '2rem', width: '100%', maxWidth: '28rem', maxHeight: '90vh', overflowY: 'auto' }}>
                         <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem', color: '#111827' }}>
                             {editingSource ? 'Edit Income Source' : 'Add Income Source'}
                         </h2>
@@ -1250,12 +1381,14 @@ export default function IncomePage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowAddModal(false)}
+                                    className="btn-secondary"
                                     style={{ flex: 1, padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #d1d5db', backgroundColor: 'white', cursor: 'pointer' }}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
+                                    className="btn-primary"
                                     style={{ flex: 1, padding: '0.75rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 600, border: 'none', cursor: 'pointer' }}
                                 >
                                     {editingSource ? 'Update' : 'Add'}

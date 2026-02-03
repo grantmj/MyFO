@@ -1,19 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { categorizeTransaction } from '@/lib/categorize';
+import PDFParser from 'pdf2json';
 
-// Dynamic import for pdf-parse (CommonJS module)
-const pdfParse = require('pdf-parse');
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Configure route segment
+export const runtime = 'nodejs';
+export const maxDuration = 30; // 30 seconds timeout
 
 /**
  * POST - Parse PDF credit card statement and extract transactions
  */
 export async function POST(request: NextRequest) {
   try {
+    // Check for OpenAI API key first
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('Missing OPENAI_API_KEY environment variable');
+      return NextResponse.json({ 
+        error: 'PDF parsing is not configured. Missing API key.' 
+      }, { status: 500 });
+    }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -36,15 +46,43 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Extract text from PDF
+    // Extract text from PDF using pdf2json
     let pdfText: string;
     try {
-      const pdfData = await pdfParse(buffer);
-      pdfText = pdfData.text;
-    } catch (error) {
+      console.log('📄 Starting PDF parsing with pdf2json...');
+      
+      pdfText = await new Promise<string>((resolve, reject) => {
+        const pdfParser = new (PDFParser as any)(null, 1);
+        
+        pdfParser.on('pdfParser_dataError', (errData: any) => {
+          reject(new Error(errData.parserError));
+        });
+        
+        pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
+          try {
+            // Extract text from all pages
+            const text = pdfData.Pages.map((page: any) => {
+              return page.Texts.map((textItem: any) => {
+                return decodeURIComponent(textItem.R.map((r: any) => r.T).join(''));
+              }).join(' ');
+            }).join('\n\n');
+            
+            resolve(text);
+          } catch (err) {
+            reject(err);
+          }
+        });
+        
+        // Parse the buffer
+        pdfParser.parseBuffer(buffer);
+      });
+      
+      console.log(`✅ Extracted ${pdfText.length} characters from PDF`);
+    } catch (error: any) {
       console.error('PDF parsing error:', error);
+      console.error('Error message:', error?.message);
       return NextResponse.json({ 
-        error: 'Failed to parse PDF. Try CSV import instead.' 
+        error: `Failed to parse PDF: ${error?.message || 'Unknown error'}. The file might be corrupted, password-protected, or image-based. Try CSV import instead.` 
       }, { status: 400 });
     }
 
@@ -124,6 +162,18 @@ Return ONLY valid JSON array:`;
       }
     } catch (error: any) {
       console.error('OpenAI API error:', error);
+      
+      // Provide more specific error messages
+      if (error.status === 401) {
+        return NextResponse.json({ 
+          error: 'Invalid API key. PDF parsing is not configured correctly.' 
+        }, { status: 500 });
+      } else if (error.status === 429) {
+        return NextResponse.json({ 
+          error: 'API rate limit exceeded. Please try again in a moment.' 
+        }, { status: 429 });
+      }
+      
       return NextResponse.json({ 
         error: 'Failed to process PDF with AI. Please try again or use CSV import.' 
       }, { status: 500 });
@@ -168,10 +218,16 @@ Return ONLY valid JSON array:`;
       transactions: processedTransactions,
       count: processedTransactions.length,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error parsing PDF:', error);
+    console.error('Error details:', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name
+    });
     return NextResponse.json({ 
-      error: 'An unexpected error occurred while processing the PDF.' 
+      error: 'An unexpected error occurred while processing the PDF.',
+      details: process.env.NODE_ENV === 'development' ? error?.message : undefined
     }, { status: 500 });
   }
 }

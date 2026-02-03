@@ -29,6 +29,16 @@ export default function Dashboard() {
   const [fafsaChecklist, setFafsaChecklist] = useState<FafsaChecklist | null>(null);
   const [financialHealth, setFinancialHealth] = useState<FinancialHealth | null>(null);
 
+  // Plan data for funds breakdown
+  const [planData, setPlanData] = useState<any>(null);
+  const [showFundsModal, setShowFundsModal] = useState(false);
+  const [editingFunds, setEditingFunds] = useState({
+    starting_balance: '',
+    grants: '',
+    loans: '',
+  });
+  const [savingFunds, setSavingFunds] = useState(false);
+
   useEffect(() => {
     initializeDashboard();
   }, []);
@@ -78,6 +88,9 @@ export default function Dashboard() {
         router.push('/onboarding');
         return;
       }
+
+      // Store plan data for funds breakdown
+      setPlanData(plan);
 
       // Fetch data in parallel - handle each response individually to prevent one failure from breaking all
       const [snapshotRes, fafsaRes, healthRes] = await Promise.all([
@@ -170,6 +183,50 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error updating FAFSA checklist:', error);
     }
+  }
+
+  function openFundsModal() {
+    if (planData) {
+      setEditingFunds({
+        starting_balance: planData.starting_balance?.toString() || '0',
+        grants: planData.grants?.toString() || '0',
+        loans: planData.loans?.toString() || '0',
+      });
+      setShowFundsModal(true);
+    }
+  }
+
+  async function saveFunds() {
+    if (!userId || !planData) return;
+
+    setSavingFunds(true);
+    try {
+      const res = await fetch('/api/plan', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: planData.id,
+          data: {
+            startingBalance: parseFloat(editingFunds.starting_balance) || 0,
+            grants: parseFloat(editingFunds.grants) || 0,
+            loans: parseFloat(editingFunds.loans) || 0,
+          }
+        }),
+      });
+
+      if (res.ok) {
+        showToast('Funds updated successfully!', 'success');
+        setShowFundsModal(false);
+        // Refresh data
+        initializeDashboard();
+      } else {
+        showToast('Failed to update funds', 'error');
+      }
+    } catch (error) {
+      console.error('Error saving funds:', error);
+      showToast('Failed to update funds', 'error');
+    }
+    setSavingFunds(false);
   }
 
   if (loading) {
@@ -345,8 +402,26 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Remaining Funds */}
-          <div style={cardStyle}>
+          {/* Remaining Funds - Clickable */}
+          <div
+            onClick={openFundsModal}
+            style={{
+              ...cardStyle,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              border: '2px solid transparent',
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
+              e.currentTarget.style.borderColor = '#10b981';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+              e.currentTarget.style.borderColor = 'transparent';
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <div>
                 <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -355,8 +430,8 @@ export default function Dashboard() {
                 <p style={{ marginTop: '0.5rem', fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>
                   <AnimatedNumber value={snapshot.remainingFundsToday} prefix="$" decimals={0} />
                 </p>
-                <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                  Available today
+                <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: '#10b981', fontWeight: 500 }}>
+                  Click to see breakdown →
                 </p>
               </div>
               <div style={{
@@ -375,6 +450,175 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Funds Breakdown Modal */}
+        {showFundsModal && planData && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+            }}
+            onClick={() => setShowFundsModal(false)}
+          >
+            <div
+              style={{
+                background: 'white',
+                borderRadius: '1rem',
+                padding: '2rem',
+                maxWidth: '500px',
+                width: '90%',
+                maxHeight: '90vh',
+                overflow: 'auto',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                💰 Funds Breakdown
+              </h2>
+
+              {/* Current Remaining */}
+              <div style={{ background: '#ecfdf5', borderRadius: '0.75rem', padding: '1rem', marginBottom: '1.5rem' }}>
+                <p style={{ fontSize: '0.875rem', color: '#059669', fontWeight: 500 }}>Current Remaining</p>
+                <p style={{ fontSize: '2rem', fontWeight: 700, color: '#047857' }}>${snapshot?.remainingFundsToday?.toFixed(2) || '0'}</p>
+              </div>
+
+              {/* Breakdown */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#374151', marginBottom: '1rem' }}>Source Breakdown</h3>
+
+                {/* Starting Balance */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#6b7280', marginBottom: '0.25rem' }}>
+                    Total Disbursement
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1.25rem' }}>$</span>
+                    <input
+                      type="number"
+                      value={editingFunds.starting_balance}
+                      onChange={(e) => setEditingFunds({ ...editingFunds, starting_balance: e.target.value })}
+                      style={{
+                        flex: 1,
+                        padding: '0.75rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.5rem',
+                        fontSize: '1rem',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Grants */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#6b7280', marginBottom: '0.25rem' }}>
+                    <span style={{ color: '#10b981' }}>🎓</span> Grants & Scholarships (Free Money!)
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1.25rem' }}>$</span>
+                    <input
+                      type="number"
+                      value={editingFunds.grants}
+                      onChange={(e) => setEditingFunds({ ...editingFunds, grants: e.target.value })}
+                      style={{
+                        flex: 1,
+                        padding: '0.75rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.5rem',
+                        fontSize: '1rem',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Loans */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 500, color: '#6b7280', marginBottom: '0.25rem' }}>
+                    <span style={{ color: '#f59e0b' }}>⚠️</span> Loans (Must Repay!)
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1.25rem' }}>$</span>
+                    <input
+                      type="number"
+                      value={editingFunds.loans}
+                      onChange={(e) => setEditingFunds({ ...editingFunds, loans: e.target.value })}
+                      style={{
+                        flex: 1,
+                        padding: '0.75rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '0.5rem',
+                        fontSize: '1rem',
+                      }}
+                    />
+                  </div>
+                  {parseFloat(editingFunds.loans) > 0 && (
+                    <p style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '0.25rem' }}>
+                      💡 This will need to be repaid after graduation
+                    </p>
+                  )}
+                </div>
+
+                {/* Spent So Far */}
+                <div style={{ background: '#f3f4f6', borderRadius: '0.5rem', padding: '1rem', marginTop: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ color: '#6b7280' }}>Total Spent</span>
+                    <span style={{ fontWeight: 600, color: '#ef4444' }}>
+                      -${snapshot?.actualSpendToDate?.toFixed(2) || '0'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#6b7280' }}>Expected by now</span>
+                    <span style={{ fontWeight: 500, color: '#6b7280' }}>
+                      ${snapshot?.expectedSpendToDate?.toFixed(2) || '0'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  onClick={() => setShowFundsModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    background: 'white',
+                    color: '#374151',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveFunds}
+                  disabled={savingFunds}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    background: savingFunds ? '#9ca3af' : '#10b981',
+                    color: 'white',
+                    fontWeight: 600,
+                    cursor: savingFunds ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {savingFunds ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Financial Health Summary */}
         {financialHealth && (

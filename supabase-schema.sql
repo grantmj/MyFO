@@ -187,3 +187,47 @@ CREATE TRIGGER fafsa_checklist_updated_at BEFORE UPDATE ON fafsa_checklist
 
 CREATE TRIGGER emergency_fund_updated_at BEFORE UPDATE ON emergency_fund
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ============================================
+-- OPPORTUNITIES TABLE (Track job/scholarship applications)
+-- ============================================
+CREATE TABLE IF NOT EXISTS opportunities (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  
+  -- Basic info
+  type TEXT NOT NULL CHECK (type IN ('job', 'scholarship', 'grant', 'gig', 'work_study')),
+  name TEXT NOT NULL,
+  organization TEXT,
+  
+  -- Details
+  amount DECIMAL(12,2), -- Expected pay/award amount
+  frequency TEXT CHECK (frequency IN ('hourly', 'weekly', 'biweekly', 'monthly', 'semester', 'one_time')),
+  hours_per_week DECIMAL(4,1),
+  deadline DATE,
+  
+  -- Links
+  apply_url TEXT,
+  
+  -- Status tracking
+  status TEXT NOT NULL DEFAULT 'discovered' CHECK (status IN ('discovered', 'applied', 'interviewing', 'received', 'rejected', 'saved')),
+  applied_date DATE,
+  decision_date DATE,
+  
+  -- Notes
+  notes TEXT,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_opportunities_user ON opportunities(user_id);
+CREATE INDEX IF NOT EXISTS idx_opportunities_status ON opportunities(user_id, status);
+
+-- Enable RLS
+ALTER TABLE opportunities ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all for opportunities" ON opportunities FOR ALL USING (true);
+
+-- Add trigger for updated_at
+CREATE TRIGGER opportunities_updated_at BEFORE UPDATE ON opportunities
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();

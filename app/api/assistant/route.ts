@@ -47,7 +47,7 @@ const functions: OpenAI.Chat.ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'add_transaction',
-      description: 'Add a new spending transaction. Call this when the user mentions they spent money on something.',
+      description: 'Add a spending transaction. Call this when the user mentions they spent money on something. If they don\'t mention a date, ASK when it happened before calling this function.',
       parameters: {
         type: 'object',
         properties: {
@@ -63,9 +63,185 @@ const functions: OpenAI.Chat.ChatCompletionTool[] = [
             type: 'string',
             enum: ['groceries', 'dining', 'entertainment', 'transportation', 'rent', 'utilities', 'subscriptions', 'misc'],
             description: 'Category of the transaction'
+          },
+          date: {
+            type: 'string',
+            description: 'Date of the transaction in YYYY-MM-DD format. If user says "today", "yesterday", "last week", convert to actual date. If unsure, ask the user.'
           }
         },
         required: ['amount', 'description', 'category']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_income',
+      description: 'Add a new income source like a job, scholarship, grant, work-study, or family support. Call this when user mentions getting a new job, winning a scholarship, receiving a grant, or other recurring/one-time income.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Name of the income source (e.g., "Library Student Assistant", "FAFSA Grant", "Parents monthly support")'
+          },
+          amount: {
+            type: 'number',
+            description: 'Amount in dollars'
+          },
+          type: {
+            type: 'string',
+            enum: ['job', 'work_study', 'scholarship', 'grant', 'loan', 'family', 'other'],
+            description: 'Type of income source'
+          },
+          frequency: {
+            type: 'string',
+            enum: ['weekly', 'biweekly', 'monthly', 'semester', 'one_time'],
+            description: 'How often this income is received'
+          },
+          notes: {
+            type: 'string',
+            description: 'Optional notes about the income source'
+          }
+        },
+        required: ['name', 'amount', 'type', 'frequency']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_planned_item',
+      description: 'Add a planned future expense like textbooks, spring break trip, concert tickets. Call this when user mentions something they need or want to buy in the future.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Name of the planned expense'
+          },
+          amount: {
+            type: 'number',
+            description: 'Estimated cost in dollars'
+          },
+          date: {
+            type: 'string',
+            description: 'When they plan to make this purchase (YYYY-MM-DD format)'
+          },
+          category: {
+            type: 'string',
+            enum: ['groceries', 'dining', 'entertainment', 'transportation', 'rent', 'utilities', 'subscriptions', 'misc'],
+            description: 'Category of the expense'
+          }
+        },
+        required: ['name', 'amount', 'date']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'delete_transaction',
+      description: 'Delete transactions by matching description. Use description="all" to delete ALL transactions. Set delete_all=true to delete all matching transactions at once.',
+      parameters: {
+        type: 'object',
+        properties: {
+          description: {
+            type: 'string',
+            description: 'Description or partial description of the transaction to delete. Use "all" to delete ALL transactions.'
+          },
+          amount: {
+            type: 'number',
+            description: 'Amount of the transaction to delete (helps narrow down which one)'
+          },
+          date: {
+            type: 'string',
+            description: 'Date of the transaction in YYYY-MM-DD format'
+          },
+          delete_all: {
+            type: 'boolean',
+            description: 'If true, delete ALL transactions matching the criteria. If false, only delete the first match.'
+          }
+        },
+        required: ['description']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_opportunity',
+      description: 'Update the status of a job or scholarship application. Call this when user says they applied, got an interview, received an offer, or got rejected. If status changes to "received", this will automatically add it as an income source.',
+      parameters: {
+        type: 'object',
+        properties: {
+          opportunity_name: {
+            type: 'string',
+            description: 'Name or partial name of the opportunity to update'
+          },
+          status: {
+            type: 'string',
+            enum: ['discovered', 'applied', 'interviewing', 'received', 'rejected', 'saved'],
+            description: 'New status of the application'
+          },
+          notes: {
+            type: 'string',
+            description: 'Optional notes about the status change'
+          }
+        },
+        required: ['opportunity_name', 'status']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'track_opportunity',
+      description: 'Add a new job or scholarship opportunity to track. Call this when user mentions a new job, internship, scholarship, or grant they want to apply for.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Name of the job or scholarship'
+          },
+          type: {
+            type: 'string',
+            enum: ['job', 'scholarship', 'grant', 'gig', 'work_study'],
+            description: 'Type of opportunity'
+          },
+          organization: {
+            type: 'string',
+            description: 'Company or organization offering this opportunity'
+          },
+          amount: {
+            type: 'number',
+            description: 'Pay rate (hourly for jobs) or award amount (for scholarships/grants)'
+          },
+          frequency: {
+            type: 'string',
+            enum: ['hourly', 'weekly', 'biweekly', 'monthly', 'semester', 'one_time'],
+            description: 'How often this pays'
+          },
+          hours_per_week: {
+            type: 'number',
+            description: 'For jobs: expected hours per week'
+          },
+          deadline: {
+            type: 'string',
+            description: 'Application deadline in YYYY-MM-DD format'
+          },
+          apply_url: {
+            type: 'string',
+            description: 'URL to apply'
+          },
+          status: {
+            type: 'string',
+            enum: ['discovered', 'saved', 'applied'],
+            description: 'Initial status (default: saved)'
+          }
+        },
+        required: ['name', 'type']
       }
     }
   }
@@ -104,6 +280,9 @@ async function executeFunction(name: string, args: any, userId: string, planId: 
   }
 
   if (name === 'add_transaction') {
+    // Use provided date or default to now
+    const transactionDate = args.date ? new Date(args.date).toISOString() : new Date().toISOString();
+
     const { error } = await supabase
       .from('transactions')
       .insert({
@@ -111,14 +290,241 @@ async function executeFunction(name: string, args: any, userId: string, planId: 
         amount: args.amount,
         description: args.description,
         category: args.category,
-        date: new Date().toISOString(),
+        date: transactionDate,
       });
 
     if (error) {
       console.error('Error adding transaction:', error);
       return { success: false, error: error.message };
     }
-    return { success: true, amount: args.amount, category: args.category };
+    return { success: true, amount: args.amount, category: args.category, date: args.date || 'today' };
+  }
+
+  if (name === 'add_income') {
+    const { error } = await supabase
+      .from('income_sources')
+      .insert({
+        user_id: userId,
+        name: args.name,
+        amount: args.amount,
+        type: args.type,
+        frequency: args.frequency,
+        notes: args.notes || null,
+      });
+
+    if (error) {
+      console.error('Error adding income:', error);
+      return { success: false, error: error.message };
+    }
+    return { success: true, name: args.name, amount: args.amount, type: args.type, frequency: args.frequency };
+  }
+
+  if (name === 'add_planned_item') {
+    const { error } = await supabase
+      .from('planned_items')
+      .insert({
+        user_id: userId,
+        name: args.name,
+        amount: args.amount,
+        date: args.date,
+        category: args.category || 'misc',
+      });
+
+    if (error) {
+      console.error('Error adding planned item:', error);
+      return { success: false, error: error.message };
+    }
+    return { success: true, name: args.name, amount: args.amount, date: args.date };
+  }
+
+  if (name === 'delete_transaction') {
+    // Special case: delete all transactions
+    if (args.description === 'all' || args.description === '*') {
+      const { data: allTx, error: fetchError } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('user_id', userId);
+
+      if (fetchError || !allTx || allTx.length === 0) {
+        return { success: false, error: 'No transactions to delete' };
+      }
+
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error deleting all transactions:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, deleted: 'all', count: allTx.length, message: `Deleted all ${allTx.length} transactions` };
+    }
+
+    // Find matching transactions
+    let query = supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .ilike('description', `%${args.description}%`);
+
+    if (args.amount) {
+      query = query.eq('amount', args.amount);
+    }
+    if (args.date) {
+      query = query.eq('date', args.date);
+    }
+
+    const { data: matchingTx, error: fetchError } = await query;
+
+    if (fetchError) {
+      console.error('Error finding transaction:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    if (!matchingTx || matchingTx.length === 0) {
+      return { success: false, error: `No transaction found matching "${args.description}"` };
+    }
+
+    // If delete_all flag is set, delete all matches
+    if (args.delete_all && matchingTx.length > 1) {
+      const ids = matchingTx.map((t: any) => t.id);
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .in('id', ids);
+
+      if (error) {
+        console.error('Error deleting transactions:', error);
+        return { success: false, error: error.message };
+      }
+
+      return {
+        success: true,
+        deleted: matchingTx.map((t: any) => t.description).join(', '),
+        count: matchingTx.length,
+        message: `Deleted ${matchingTx.length} transactions`
+      };
+    }
+
+    // Delete the first match
+    const txToDelete = matchingTx[0];
+    const { error } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('id', txToDelete.id);
+
+    if (error) {
+      console.error('Error deleting transaction:', error);
+      return { success: false, error: error.message };
+    }
+
+    return {
+      success: true,
+      deleted: txToDelete.description,
+      amount: txToDelete.amount,
+      message: `Deleted "${txToDelete.description}" ($${txToDelete.amount})`
+    };
+  }
+
+  if (name === 'update_opportunity') {
+    // First find the opportunity by name (case-insensitive partial match)
+    const { data: opportunities, error: fetchError } = await supabase
+      .from('opportunities')
+      .select('*')
+      .eq('user_id', userId)
+      .ilike('name', `%${args.opportunity_name}%`);
+
+    if (fetchError) {
+      console.error('Error fetching opportunities:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    if (!opportunities || opportunities.length === 0) {
+      return { success: false, error: `No opportunity found matching "${args.opportunity_name}"` };
+    }
+
+    const opportunity = opportunities[0];
+    const updates: any = { status: args.status };
+
+    if (args.notes) updates.notes = args.notes;
+    if (args.status === 'applied') updates.applied_date = new Date().toISOString().split('T')[0];
+    if (args.status === 'received' || args.status === 'rejected') {
+      updates.decision_date = new Date().toISOString().split('T')[0];
+    }
+
+    const { data, error } = await supabase
+      .from('opportunities')
+      .update(updates)
+      .eq('id', opportunity.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating opportunity:', error);
+      return { success: false, error: error.message };
+    }
+
+    // If status is 'received', also create income source
+    if (args.status === 'received') {
+      const incomeTypeMap: Record<string, string> = {
+        'job': 'job', 'work_study': 'work_study', 'scholarship': 'scholarship',
+        'grant': 'grant', 'gig': 'job'
+      };
+      const frequencyMap: Record<string, string> = {
+        'hourly': 'monthly', 'weekly': 'weekly', 'biweekly': 'biweekly',
+        'monthly': 'monthly', 'semester': 'semester', 'one_time': 'one_time'
+      };
+
+      let amount = opportunity.amount || 0;
+      if (opportunity.frequency === 'hourly' && opportunity.hours_per_week) {
+        amount = opportunity.amount * opportunity.hours_per_week * 4;
+      }
+
+      await supabase.from('income_sources').insert({
+        user_id: userId,
+        name: opportunity.name,
+        amount: amount,
+        type: incomeTypeMap[opportunity.type] || 'other',
+        frequency: frequencyMap[opportunity.frequency || 'monthly'] || 'monthly',
+        notes: `Auto-added from application (${opportunity.organization || 'unknown'})`,
+      });
+
+      return {
+        success: true,
+        opportunity: opportunity.name,
+        status: args.status,
+        incomeCreated: true,
+        message: `Updated "${opportunity.name}" to ${args.status} and added as income source!`
+      };
+    }
+
+    return { success: true, opportunity: opportunity.name, status: args.status };
+  }
+
+  if (name === 'track_opportunity') {
+    const { error } = await supabase
+      .from('opportunities')
+      .insert({
+        user_id: userId,
+        name: args.name,
+        type: args.type,
+        organization: args.organization || null,
+        amount: args.amount || null,
+        frequency: args.frequency || null,
+        hours_per_week: args.hours_per_week || null,
+        deadline: args.deadline || null,
+        apply_url: args.apply_url || null,
+        status: args.status || 'saved',
+        notes: null,
+      });
+
+    if (error) {
+      console.error('Error tracking opportunity:', error);
+      return { success: false, error: error.message };
+    }
+    return { success: true, name: args.name, type: args.type, status: args.status || 'saved' };
   }
 
   return { success: false, error: 'Unknown function' };
@@ -180,6 +586,23 @@ export async function POST(request: NextRequest) {
 
     const plannedItems = plannedItemsData as any[];
 
+    // Fetch income sources (no is_active column in schema)
+    const { data: incomeSourcesData } = await supabase
+      .from('income_sources')
+      .select('*')
+      .eq('user_id', userId);
+
+    const incomeSources = incomeSourcesData as any[];
+
+    // Fetch opportunities (job/scholarship applications)
+    const { data: opportunitiesData } = await supabase
+      .from('opportunities')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    const opportunities = opportunitiesData as any[];
+
     // JSONB is already parsed by Supabase
     const fixedCosts = plan.fixed_costs as any;
     const variableBudgets = plan.variable_budgets as any;
@@ -219,40 +642,113 @@ export async function POST(request: NextRequest) {
       evaluation = evaluatePurchase(purchaseAmount, snapshot);
     }
 
+    // Calculate weekly income
+    const weeklyIncome = (incomeSources || []).reduce((total: number, source: any) => {
+      const amount = source.amount || 0;
+      switch (source.frequency) {
+        case 'weekly': return total + amount;
+        case 'biweekly': return total + (amount / 2);
+        case 'monthly': return total + (amount / 4);
+        case 'semester': return total + (amount / snapshot.weeksTotal);
+        default: return total;
+      }
+    }, 0);
+
+    // Determine budget health signals for proactive messaging
+    const isBudgetTight = snapshot.safeToSpendThisWeek < 50 || snapshot.status === 'behind';
+    const hasLoans = plan.loans > 0;
+    const loanPercentage = ((plan.loans / plan.starting_balance) * 100).toFixed(0);
+    const weeksRemaining = snapshot.weeksTotal - snapshot.weeksElapsed;
+
     // Build context for LLM
     const budgetContext = `
 CURRENT BUDGET STATUS (use these exact numbers, never invent your own):
+- Today's date: ${format(new Date(), 'MMMM d, yyyy')}
 - Remaining funds today: $${snapshot.remainingFundsToday.toFixed(2)}
 - Safe to spend this week: $${snapshot.safeToSpendThisWeek.toFixed(2)}
 - Runway date: ${snapshot.runwayDate ? format(snapshot.runwayDate, 'MMM dd, yyyy') : 'Fully funded through semester end'}
 - Budget status: ${snapshot.status === 'ahead' ? 'AHEAD of plan' : snapshot.status === 'behind' ? 'BEHIND plan' : 'ON TRACK'} by $${Math.abs(snapshot.aheadBehind).toFixed(2)}
-- Weeks elapsed: ${snapshot.weeksElapsed} of ${snapshot.weeksTotal}
+- Weeks elapsed: ${snapshot.weeksElapsed} of ${snapshot.weeksTotal} (${weeksRemaining} weeks remaining)
 
-CURRENT PLAN VALUES:
+SEMESTER FUNDING:
 - Total disbursement: $${plan.starting_balance}
-- Loans: $${plan.loans}
-- Grants/Scholarships: $${plan.grants}
+- From Loans: $${plan.loans} (${loanPercentage}% of total - ${hasLoans ? 'remember to gently remind about repayment on big purchases' : 'no loans!'})
+- From Grants/Scholarships: $${plan.grants} (free money!)
 - Weekly variable budget: $${Object.values(variableBudgets || {}).reduce((a: number, b: any) => a + (Number(b) || 0), 0).toFixed(0)}
+
+CURRENT INCOME SOURCES (${(incomeSources || []).length} active):
+${(incomeSources || []).length > 0
+        ? (incomeSources || []).map((s: any) => `- ${s.name}: $${s.amount}/${s.frequency} (${s.type})`).join('\n')
+        : '- No active income sources yet - SUGGEST JOBS/SCHOLARSHIPS!'}
+- Estimated weekly income: $${weeklyIncome.toFixed(0)}/week
+
+JOB/SCHOLARSHIP APPLICATIONS (${(opportunities || []).length} tracked):
+${(opportunities || []).length > 0
+        ? (opportunities || []).map((o: any) => `- ${o.name} (${o.type}): ${o.status.toUpperCase()}${o.amount ? ` - $${o.amount}` : ''}${o.organization ? ` @ ${o.organization}` : ''}`).join('\n')
+        : '- No applications being tracked'}
+
+RECENT TRANSACTIONS (last 10):
+${(transactions || []).slice(0, 10).map((t: any) => `- ${format(new Date(t.date), 'MMM d')}: ${t.description} - $${t.amount} (${t.category})`).join('\n') || '- No transactions recorded'}
+
+PROACTIVE SIGNALS:
+- Budget is ${isBudgetTight ? 'TIGHT - suggest income boosting options!' : 'healthy'}
+- ${hasLoans ? `User has loans ($${plan.loans}) - be mindful about big discretionary purchases` : 'No student loans'}
+- ${(incomeSources || []).length === 0 ? 'NO INCOME SOURCES - strongly suggest campus jobs or scholarships!' : ''}
 
 ${evaluation ? `
 PURCHASE EVALUATION for $${purchaseAmount}:
 - Verdict: ${evaluation.verdict.toUpperCase()}
 - Impact on safe-to-spend: Would leave $${evaluation.impactOnSafeToSpend.toFixed(2)} for the week
+- Work hours equivalent: ${(purchaseAmount! / 15).toFixed(1)} hours at $15/hr
 ` : ''}
 `;
 
-    const systemPrompt = `You are MyFo (My Financial Officer), a helpful student financial assistant. 
+    const systemPrompt = `You are MyFo (My Financial Officer), a proactive and empathetic student financial assistant. Today's date is ${format(new Date(), 'MMMM d, yyyy')}.
 
-IMPORTANT: You have the ability to UPDATE THE DATABASE when the user wants to change their financial info.
-- If they say they have a different loan amount, USE update_plan to change it
-- If they mention spending money on something, USE add_transaction to log it
-- Always confirm what you updated after making changes
+YOUR PERSONALITY:
+- Be supportive, not judgy about spending
+- Be proactive with helpful suggestions
+- Keep responses concise but warm
+- Use data to back up your suggestions
 
-When making updates:
-1. Use the update_plan function for: loan amounts, disbursement, grants, weekly budget
-2. Use the add_transaction function for: recording purchases/spending
+DATABASE OPERATIONS - You can update the user's financial data:
+1. add_income: When they mention a NEW job, scholarship, grant, work-study, or family support
+2. add_transaction: When they spent money (ALWAYS ASK FOR THE DATE if not provided - "When did you make this purchase?")
+3. delete_transaction: When they want to remove a mistaken or duplicate transaction
+4. update_plan: When they want to change loan amounts, disbursement, or weekly budget
+5. add_planned_item: When they mention future expenses they're planning for
+6. update_opportunity: When they update status of a job/scholarship application (applied, interviewing, received, rejected)
+7. track_opportunity: When they want to track a new job or scholarship they're interested in
 
-Be helpful, concise, and proactive about updating their info when they share new financial details.`;
+CRITICAL RULES:
+- ALWAYS ask "When did this happen?" or "What date was this?" if they mention a past transaction without specifying when
+- Use add_income for jobs/scholarships, NOT add_transaction
+- Confirm what you updated after making any database change
+- When updating opportunity to "received", it automatically creates an income source - celebrate with them!
+
+BE PROACTIVE WITH SUGGESTIONS:
+1. If budget is TIGHT (safe-to-spend < $50/week or behind on budget):
+   - Suggest low-commitment jobs: "Have you considered a flexible campus job? Library positions often have 10-15 hrs/week and you can study between tasks."
+   - Mention scholarship opportunities: "There are thousands of small scholarships ($500-$2000) many students don't apply for. Want me to help you think about what might fit?"
+
+2. If they have LOANS:
+   - Gently remind them: "Btw, part of your funds ($X) comes from loans that will need to be repaid. Just something to keep in mind when making big purchases!"
+   - For non-essential big purchases, suggest alternatives
+
+3. INCOME BOOSTING suggestions when relevant:
+   - On-campus jobs: Library, dining halls, rec center, tutoring, research assistant
+   - Gig economy: Red Bull rep, campus brand ambassador, study participant
+   - Scholarships: Department-specific, identity-based, major-specific, essay contests
+
+4. When they mention wanting something expensive:
+   - Calculate how many work hours it would take at $15/hr
+   - Suggest waiting or saving gradually
+
+5. ALWAYS be aware of:
+   - How many weeks are left in the semester
+   - Whether they're ahead or behind on their budget
+   - Their loan vs. grant ratio (higher loans = more gentle about spending)`;
+
 
     // Call OpenAI with function calling
     const openai = new OpenAI({
@@ -279,7 +775,10 @@ Be helpful, concise, and proactive about updating their info when they share new
     let functionResults: string[] = [];
 
     // Handle function calls
-    if (assistantMessage.tool_calls) {
+    if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+      // Process all tool calls and collect results
+      const toolResponses: { tool_call_id: string; result: string }[] = [];
+
       for (const toolCall of assistantMessage.tool_calls) {
         const fn = (toolCall as any).function;
         if (!fn) continue;
@@ -290,18 +789,25 @@ Be helpful, concise, and proactive about updating their info when they share new
           userId,
           plan.id
         );
-        functionResults.push(
-          `${fn.name}: ${result.success ? 'Updated successfully' : result.error}`
-        );
+        const resultMessage = `${fn.name}: ${result.success ? 'Updated successfully' : result.error}`;
+        functionResults.push(resultMessage);
+        toolResponses.push({
+          tool_call_id: (toolCall as any).id,
+          result: resultMessage
+        });
       }
 
-      // Get final response after function calls
+      // Get final response after function calls - must respond to ALL tool calls
       messages.push(assistantMessage);
-      messages.push({
-        role: 'tool',
-        tool_call_id: (assistantMessage.tool_calls[0] as any).id,
-        content: JSON.stringify({ results: functionResults }),
-      });
+
+      // Add a tool response message for EACH tool call
+      for (const toolResponse of toolResponses) {
+        messages.push({
+          role: 'tool',
+          tool_call_id: toolResponse.tool_call_id,
+          content: JSON.stringify({ result: toolResponse.result }),
+        });
+      }
 
       completion = await openai.chat.completions.create({
         model: 'gpt-4o-mini',

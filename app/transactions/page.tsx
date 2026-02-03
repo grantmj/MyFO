@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import Select from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
 import { CATEGORY_LABELS, Category } from "@/lib/constants";
-import { format } from "date-fns";
+import { format, startOfMonth, startOfWeek, subMonths } from "date-fns";
 import Papa from "papaparse";
 
 interface Transaction {
@@ -16,6 +16,36 @@ interface Transaction {
   source: string;
 }
 
+const CATEGORY_COLORS: Record<string, string> = {
+  rent: '#ef4444',
+  utilities: '#f97316',
+  groceries: '#22c55e',
+  dining: '#eab308',
+  transportation: '#3b82f6',
+  books_supplies: '#8b5cf6',
+  health: '#ec4899',
+  subscriptions: '#06b6d4',
+  entertainment: '#f43f5e',
+  travel: '#14b8a6',
+  misc: '#6b7280',
+  income: '#76B89F',
+};
+
+const CATEGORY_ICONS: Record<string, string> = {
+  rent: '🏠',
+  utilities: '💡',
+  groceries: '🛒',
+  dining: '🍕',
+  transportation: '🚗',
+  books_supplies: '📚',
+  health: '💊',
+  subscriptions: '📱',
+  entertainment: '🎬',
+  travel: '✈️',
+  misc: '📦',
+  income: '💰',
+};
+
 export default function TransactionsPage() {
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -24,6 +54,7 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [viewPeriod, setViewPeriod] = useState<'week' | 'month' | 'semester'>('month');
 
   // CSV parsing state
   const [showColumnMapper, setShowColumnMapper] = useState(false);
@@ -39,6 +70,76 @@ export default function TransactionsPage() {
   const [parsedTransactions, setParsedTransactions] = useState<any[]>([]);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [editableTransactions, setEditableTransactions] = useState<any[]>([]);
+
+  // Computed spending analytics
+  const spendingAnalytics = useMemo(() => {
+    const now = new Date();
+    let periodStart: Date;
+
+    switch (viewPeriod) {
+      case 'week':
+        periodStart = startOfWeek(now);
+        break;
+      case 'semester':
+        periodStart = new Date(now.getFullYear(), now.getMonth() < 6 ? 0 : 6, 1);
+        break;
+      default:
+        periodStart = startOfMonth(now);
+    }
+
+    const prevPeriodStart = subMonths(periodStart, 1);
+
+    // Filter transactions for current period (expenses only, positive amounts)
+    const periodTransactions = transactions.filter(t => {
+      const txDate = new Date(t.date);
+      return txDate >= periodStart && t.amount > 0 && t.category !== 'income';
+    });
+
+    const prevPeriodTransactions = transactions.filter(t => {
+      const txDate = new Date(t.date);
+      return txDate >= prevPeriodStart && txDate < periodStart && t.amount > 0 && t.category !== 'income';
+    });
+
+    // Calculate totals
+    const totalSpending = periodTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const prevTotalSpending = prevPeriodTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+    // Days elapsed in period
+    const daysElapsed = Math.max(1, Math.ceil((now.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)));
+    const avgDaily = totalSpending / daysElapsed;
+
+    // Category breakdown
+    const categoryMap: Record<string, number> = {};
+    periodTransactions.forEach(t => {
+      categoryMap[t.category] = (categoryMap[t.category] || 0) + t.amount;
+    });
+
+    const categoryTotals = Object.entries(categoryMap)
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        percentage: totalSpending > 0 ? (amount / totalSpending) * 100 : 0,
+        label: CATEGORY_LABELS[category as Category] || category,
+        color: CATEGORY_COLORS[category] || '#6b7280',
+        icon: CATEGORY_ICONS[category] || '📦',
+      }))
+      .sort((a, b) => b.amount - a.amount);
+
+    // Top 5 expenses
+    const topExpenses = [...periodTransactions]
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+
+    return {
+      totalSpending,
+      prevTotalSpending,
+      avgDaily,
+      daysElapsed,
+      categoryTotals,
+      topExpenses,
+      changePercent: prevTotalSpending > 0 ? ((totalSpending - prevTotalSpending) / prevTotalSpending) * 100 : 0,
+    };
+  }, [transactions, viewPeriod]);
 
   useEffect(() => {
     initializePage();
@@ -307,17 +408,183 @@ export default function TransactionsPage() {
             Transactions
           </h1>
           <p style={{ marginTop: '0.5rem', color: '#6b7280' }}>
-            Import and manage your spending
+            Track and analyze your spending
           </p>
         </div>
 
-        {/* PDF Import Section */}
+        {/* Period Toggle */}
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+          {(['week', 'month', 'semester'] as const).map((period) => (
+            <button
+              key={period}
+              onClick={() => setViewPeriod(period)}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '0.5rem',
+                border: 'none',
+                background: viewPeriod === period ? '#76B89F' : '#e5e7eb',
+                color: viewPeriod === period ? 'white' : '#374151',
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+                textTransform: 'capitalize',
+              }}
+            >
+              This {period}
+            </button>
+          ))}
+        </div>
+
+        {/* Spending Overview Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+          {/* Total Spending */}
+          <div style={{ ...cardStyle, marginBottom: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '1.25rem' }}>💰</span>
+              <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Total Spending</span>
+            </div>
+            <p style={{ fontSize: '2rem', fontWeight: 700, color: '#111827', margin: 0 }}>
+              ${spendingAnalytics.totalSpending.toFixed(2)}
+            </p>
+            {spendingAnalytics.prevTotalSpending > 0 && (
+              <p style={{
+                fontSize: '0.75rem',
+                color: spendingAnalytics.changePercent > 0 ? '#ef4444' : '#22c55e',
+                marginTop: '0.25rem'
+              }}>
+                {spendingAnalytics.changePercent > 0 ? '↑' : '↓'} {Math.abs(spendingAnalytics.changePercent).toFixed(0)}% vs last period
+              </p>
+            )}
+          </div>
+
+          {/* Daily Average */}
+          <div style={{ ...cardStyle, marginBottom: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '1.25rem' }}>📊</span>
+              <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Daily Average</span>
+            </div>
+            <p style={{ fontSize: '2rem', fontWeight: 700, color: '#111827', margin: 0 }}>
+              ${spendingAnalytics.avgDaily.toFixed(2)}
+            </p>
+            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+              over {spendingAnalytics.daysElapsed} days
+            </p>
+          </div>
+
+          {/* Transaction Count */}
+          <div style={{ ...cardStyle, marginBottom: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '1.25rem' }}>🧾</span>
+              <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Transactions</span>
+            </div>
+            <p style={{ fontSize: '2rem', fontWeight: 700, color: '#111827', margin: 0 }}>
+              {spendingAnalytics.categoryTotals.reduce((sum, c) => sum + 1, 0) > 0 ? spendingAnalytics.topExpenses.length + (spendingAnalytics.categoryTotals.length > 5 ? '+' : '') : '0'}
+            </p>
+            <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+              {spendingAnalytics.categoryTotals.length} categories
+            </p>
+          </div>
+        </div>
+
+        {/* Category Breakdown */}
+        {spendingAnalytics.categoryTotals.length > 0 && (
+          <div style={cardStyle}>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              📊 Spending by Category
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {spendingAnalytics.categoryTotals.map((cat) => (
+                <div key={cat.category} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ width: '2rem', textAlign: 'center', fontSize: '1.25rem' }}>
+                    {cat.icon}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                      <span style={{ fontWeight: 500, color: '#111827', fontSize: '0.875rem' }}>{cat.label}</span>
+                      <span style={{ fontWeight: 600, color: '#111827', fontSize: '0.875rem' }}>${cat.amount.toFixed(2)}</span>
+                    </div>
+                    <div style={{ height: '8px', background: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${Math.min(cat.percentage, 100)}%`,
+                          background: cat.color,
+                          borderRadius: '4px',
+                          transition: 'width 0.3s ease',
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ minWidth: '3rem', textAlign: 'right', fontSize: '0.75rem', color: '#6b7280' }}>
+                    {cat.percentage.toFixed(0)}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Top Expenses */}
+        {spendingAnalytics.topExpenses.length > 0 && (
+          <div style={cardStyle}>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              🔥 Top Expenses
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {spendingAnalytics.topExpenses.map((tx, i) => (
+                <div key={tx.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.75rem',
+                  background: '#f9fafb',
+                  borderRadius: '0.5rem',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{
+                      width: '1.5rem',
+                      height: '1.5rem',
+                      borderRadius: '50%',
+                      background: CATEGORY_COLORS[tx.category] || '#6b7280',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.75rem',
+                      color: 'white',
+                      fontWeight: 600,
+                    }}>
+                      {i + 1}
+                    </span>
+                    <div>
+                      <p style={{ fontWeight: 500, color: '#111827', fontSize: '0.875rem', margin: 0 }}>{tx.description}</p>
+                      <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>
+                        {CATEGORY_LABELS[tx.category as Category] || tx.category} • {format(new Date(tx.date), 'MMM d')}
+                      </p>
+                    </div>
+                  </div>
+                  <span style={{ fontWeight: 600, color: '#ef4444', fontSize: '0.875rem' }}>
+                    -${tx.amount.toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {transactions.length === 0 && (
+          <div style={{ ...cardStyle, textAlign: 'center', padding: '3rem' }}>
+            <span style={{ fontSize: '3rem', marginBottom: '1rem', display: 'block' }}>📭</span>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>No transactions yet</h3>
+            <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Import your bank statements below to see your spending breakdown</p>
+          </div>
+        )}
         <div style={cardStyle}>
           <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>Import from PDF</h2>
           <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
             Upload a credit card statement PDF - we&apos;ll automatically extract and categorize transactions using AI.
           </p>
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <input
               ref={pdfInputRef}

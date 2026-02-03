@@ -14,6 +14,41 @@ const INCOME_TYPE_COLORS: Record<IncomeType, string> = {
     other: '#9b8fc9',
 };
 
+interface Opportunity {
+    id: string;
+    user_id: string;
+    type: 'job' | 'scholarship' | 'grant' | 'gig' | 'work_study';
+    name: string;
+    organization?: string;
+    amount?: number;
+    frequency?: string;
+    hours_per_week?: number;
+    deadline?: string;
+    apply_url?: string;
+    status: 'discovered' | 'applied' | 'interviewing' | 'received' | 'rejected' | 'saved';
+    applied_date?: string;
+    decision_date?: string;
+    notes?: string;
+}
+
+const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+    discovered: { bg: '#e5e7eb', text: '#374151' },
+    saved: { bg: '#dbeafe', text: '#1e40af' },
+    applied: { bg: '#fef3c7', text: '#92400e' },
+    interviewing: { bg: '#e0e7ff', text: '#3730a3' },
+    received: { bg: '#d1fae5', text: '#065f46' },
+    rejected: { bg: '#fee2e2', text: '#991b1b' },
+};
+
+const STATUS_LABELS: Record<string, string> = {
+    discovered: '🔍 Discovered',
+    saved: '💾 Saved',
+    applied: '📝 Applied',
+    interviewing: '🎤 Interviewing',
+    received: '🎉 Received!',
+    rejected: '❌ Rejected',
+};
+
 export default function IncomePage() {
     const { showToast } = useToast();
     const [userId, setUserId] = useState<string | null>(null);
@@ -22,6 +57,11 @@ export default function IncomePage() {
     const [financialHealth, setFinancialHealth] = useState<FinancialHealth | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingSource, setEditingSource] = useState<IncomeSource | null>(null);
+
+    // Opportunities state
+    const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+    const [showOpportunityModal, setShowOpportunityModal] = useState(false);
+    const [editingOpportunity, setEditingOpportunity] = useState<Opportunity | null>(null);
 
     // Form state
     const [formType, setFormType] = useState<IncomeType>('job');
@@ -51,6 +91,7 @@ export default function IncomePage() {
             await Promise.all([
                 loadIncomeSources(user.id),
                 loadFinancialHealth(user.id),
+                loadOpportunities(user.id),
             ]);
             setLoading(false);
         } catch (error) {
@@ -78,6 +119,72 @@ export default function IncomePage() {
             }
         }
     }
+
+    async function loadOpportunities(uid: string) {
+        try {
+            const res = await fetch(`/api/opportunities?userId=${uid}`);
+            const data = await res.json();
+            setOpportunities(data.opportunities || []);
+        } catch (error) {
+            console.warn('Could not load opportunities');
+        }
+    }
+
+    async function saveOpportunity(opp: Partial<Opportunity> & { type: string; name: string }) {
+        if (!userId) return;
+        try {
+            const res = await fetch('/api/opportunities', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, ...opp }),
+            });
+            if (res.ok) {
+                showToast('Opportunity saved!', 'success');
+                await loadOpportunities(userId);
+            }
+        } catch (error) {
+            showToast('Failed to save opportunity', 'error');
+        }
+    }
+
+    async function updateOpportunityStatus(id: string, status: string) {
+        if (!userId) return;
+        try {
+            const res = await fetch('/api/opportunities', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, userId, status }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (status === 'received' && data.incomeCreated) {
+                    showToast('🎉 Congrats! Added to your income sources!', 'success');
+                    await loadIncomeSources(userId); // Reload income to show new source
+                } else {
+                    showToast(`Status updated to: ${STATUS_LABELS[status]}`, 'success');
+                }
+                await loadOpportunities(userId);
+            }
+        } catch (error) {
+            showToast('Failed to update status', 'error');
+        }
+    }
+
+    async function deleteOpportunity(id: string) {
+        if (!userId) return;
+        try {
+            const res = await fetch(`/api/opportunities?id=${id}&userId=${userId}`, {
+                method: 'DELETE',
+            });
+            if (res.ok) {
+                showToast('Opportunity removed', 'success');
+                await loadOpportunities(userId);
+            }
+        } catch (error) {
+            showToast('Failed to delete', 'error');
+        }
+    }
+
 
     function openAddModal() {
         setEditingSource(null);
@@ -453,6 +560,97 @@ export default function IncomePage() {
                         </div>
                     )}
 
+                    {/* My Applications Section */}
+                    {opportunities.length > 0 && (
+                        <div style={{ ...cardStyle, gridColumn: 'span 2' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: '#6366f1', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1rem' }}>📋</span>
+                                    My Applications
+                                </h3>
+                                <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.75rem' }}>
+                                    <span style={{ padding: '0.25rem 0.5rem', background: '#d1fae5', color: '#065f46', borderRadius: '9999px' }}>
+                                        {opportunities.filter(o => o.status === 'received').length} Received
+                                    </span>
+                                    <span style={{ padding: '0.25rem 0.5rem', background: '#fef3c7', color: '#92400e', borderRadius: '9999px' }}>
+                                        {opportunities.filter(o => o.status === 'applied' || o.status === 'interviewing').length} Pending
+                                    </span>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                {opportunities.map((opp) => (
+                                    <div
+                                        key={opp.id}
+                                        style={{
+                                            padding: '1rem',
+                                            borderRadius: '0.75rem',
+                                            border: '1px solid #e5e7eb',
+                                            background: opp.status === 'received' ? '#f0fdf4' : opp.status === 'rejected' ? '#fef2f2' : '#fafafa',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            gap: '1rem'
+                                        }}
+                                    >
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                                                <span style={{ fontSize: '1rem' }}>{opp.type === 'job' || opp.type === 'work_study' || opp.type === 'gig' ? '💼' : '🎓'}</span>
+                                                <p style={{ fontWeight: 600, color: '#111827' }}>{opp.name}</p>
+                                                {opp.organization && <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>@ {opp.organization}</span>}
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: '#6b7280' }}>
+                                                {opp.amount && <span style={{ fontWeight: 500 }}>{opp.frequency === 'hourly' ? `$${opp.amount}/hr` : `$${opp.amount}`}</span>}
+                                                {opp.hours_per_week && <span>{opp.hours_per_week} hrs/wk</span>}
+                                                {opp.deadline && <span>Due: {new Date(opp.deadline).toLocaleDateString()}</span>}
+                                                {opp.applied_date && <span>Applied: {new Date(opp.applied_date).toLocaleDateString()}</span>}
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            {opp.apply_url && (
+                                                <a
+                                                    href={opp.apply_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{ padding: '0.375rem 0.75rem', fontSize: '0.75rem', background: '#e0e7ff', color: '#3730a3', borderRadius: '0.375rem', textDecoration: 'none', fontWeight: 500 }}
+                                                >
+                                                    Apply →
+                                                </a>
+                                            )}
+                                            <select
+                                                value={opp.status}
+                                                onChange={(e) => updateOpportunityStatus(opp.id, e.target.value)}
+                                                style={{
+                                                    padding: '0.375rem 0.5rem',
+                                                    fontSize: '0.75rem',
+                                                    borderRadius: '0.375rem',
+                                                    border: 'none',
+                                                    background: STATUS_COLORS[opp.status]?.bg || '#e5e7eb',
+                                                    color: STATUS_COLORS[opp.status]?.text || '#374151',
+                                                    fontWeight: 500,
+                                                    cursor: 'pointer',
+                                                }}
+                                            >
+                                                <option value="discovered">🔍 Discovered</option>
+                                                <option value="saved">💾 Saved</option>
+                                                <option value="applied">📝 Applied</option>
+                                                <option value="interviewing">🎤 Interviewing</option>
+                                                <option value="received">🎉 Received!</option>
+                                                <option value="rejected">❌ Rejected</option>
+                                            </select>
+                                            <button
+                                                onClick={() => deleteOpportunity(opp.id)}
+                                                style={{ padding: '0.375rem', fontSize: '0.75rem', background: 'transparent', color: '#9ca3af', border: 'none', cursor: 'pointer' }}
+                                                title="Remove"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Job Board Section */}
                     <div style={{ ...cardStyle, gridColumn: 'span 2' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
@@ -476,21 +674,33 @@ export default function IncomePage() {
                                     <span>$15/hr</span>
                                     <span>8-15 hrs/wk</span>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        setFormType('job');
-                                        setFormName('Library Student Assistant');
-                                        setFormAmount('480');
-                                        setFormFrequency('monthly');
-                                        setFormIsLoan(false);
-                                        setFormNotes('Campus library job, ~8 hrs/week at $15/hr');
-                                        setShowAddModal(true);
-                                    }}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
-                                >
-                                    + Add This Job
-                                </button>
-                                <p style={{ fontSize: '0.7rem', color: '#76B89F', marginTop: '0.5rem', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <a
+                                        href="https://students.asu.edu/employment"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#e0e7ff', color: '#3730a3', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
+                                    >
+                                        View Listing →
+                                    </a>
+                                    <button
+                                        onClick={() => saveOpportunity({
+                                            type: 'job',
+                                            name: 'Library Student Assistant',
+                                            organization: 'Hayden Library, ASU',
+                                            amount: 15,
+                                            frequency: 'hourly',
+                                            hours_per_week: 12,
+                                            apply_url: 'https://students.asu.edu/employment',
+                                            status: 'saved',
+                                            notes: 'Campus library job, ~8-15 hrs/week at $15/hr',
+                                        })}
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    >
+                                        + Track
+                                    </button>
+                                </div>
+                                <p style={{ fontSize: '0.7rem', color: '#76B89F', textAlign: 'center' }}>
                                     Impact: +$120/wk → Stabilize weekly balance
                                 </p>
                             </div>
@@ -508,21 +718,33 @@ export default function IncomePage() {
                                     <span>$17/hr</span>
                                     <span>4-8 hrs/game</span>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        setFormType('job');
-                                        setFormName('Event Staff - Football Games');
-                                        setFormAmount('272');
-                                        setFormFrequency('monthly');
-                                        setFormIsLoan(false);
-                                        setFormNotes('~4 games/month, 4 hrs each at $17/hr');
-                                        setShowAddModal(true);
-                                    }}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
-                                >
-                                    + Add This Job
-                                </button>
-                                <p style={{ fontSize: '0.7rem', color: '#76B89F', marginTop: '0.5rem', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <a
+                                        href="https://sundevilstadium.asu.edu/jobs"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#e0e7ff', color: '#3730a3', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
+                                    >
+                                        View Listing →
+                                    </a>
+                                    <button
+                                        onClick={() => saveOpportunity({
+                                            type: 'gig',
+                                            name: 'Event Staff - Football Games',
+                                            organization: 'Sun Devil Stadium',
+                                            amount: 17,
+                                            frequency: 'hourly',
+                                            hours_per_week: 6,
+                                            apply_url: 'https://sundevilstadium.asu.edu/jobs',
+                                            status: 'saved',
+                                            notes: '~4 games/month, 4 hrs each at $17/hr',
+                                        })}
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    >
+                                        + Track
+                                    </button>
+                                </div>
+                                <p style={{ fontSize: '0.7rem', color: '#76B89F', textAlign: 'center' }}>
                                     Impact: +$68/wk → Great for weekend income
                                 </p>
                             </div>
@@ -540,21 +762,33 @@ export default function IncomePage() {
                                     <span>$16/hr</span>
                                     <span>5-10 hrs/wk</span>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        setFormType('job');
-                                        setFormName('Red Bull Campus Rep');
-                                        setFormAmount('320');
-                                        setFormFrequency('monthly');
-                                        setFormIsLoan(false);
-                                        setFormNotes('Tabling and event gigs, ~5 hrs/week at $16/hr');
-                                        setShowAddModal(true);
-                                    }}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
-                                >
-                                    + Add This Job
-                                </button>
-                                <p style={{ fontSize: '0.7rem', color: '#76B89F', marginTop: '0.5rem', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <a
+                                        href="https://jobs.redbull.com/us-en/student-marketeer"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#e0e7ff', color: '#3730a3', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
+                                    >
+                                        View Listing →
+                                    </a>
+                                    <button
+                                        onClick={() => saveOpportunity({
+                                            type: 'gig',
+                                            name: 'Red Bull Campus Rep',
+                                            organization: 'Red Bull',
+                                            amount: 16,
+                                            frequency: 'hourly',
+                                            hours_per_week: 7,
+                                            apply_url: 'https://jobs.redbull.com/us-en/student-marketeer',
+                                            status: 'saved',
+                                            notes: 'Tabling and event gigs, ~5-10 hrs/week at $16/hr',
+                                        })}
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    >
+                                        + Track
+                                    </button>
+                                </div>
+                                <p style={{ fontSize: '0.7rem', color: '#76B89F', textAlign: 'center' }}>
                                     Impact: +$80/wk → Free energy drinks included!
                                 </p>
                             </div>
@@ -572,22 +806,218 @@ export default function IncomePage() {
                                     <span>$18/hr</span>
                                     <span>10-15 hrs/wk</span>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        setFormType('job');
-                                        setFormName('Research Assistant');
-                                        setFormAmount('720');
-                                        setFormFrequency('monthly');
-                                        setFormIsLoan(false);
-                                        setFormNotes('Lab research position, ~10 hrs/week at $18/hr');
-                                        setShowAddModal(true);
-                                    }}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
-                                >
-                                    + Add This Job
-                                </button>
-                                <p style={{ fontSize: '0.7rem', color: '#76B89F', marginTop: '0.5rem', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <a
+                                        href="https://students.asu.edu/employment"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#e0e7ff', color: '#3730a3', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
+                                    >
+                                        View Listing →
+                                    </a>
+                                    <button
+                                        onClick={() => saveOpportunity({
+                                            type: 'job',
+                                            name: 'Research Assistant',
+                                            organization: 'Fulton Engineering',
+                                            amount: 18,
+                                            frequency: 'hourly',
+                                            hours_per_week: 12,
+                                            apply_url: 'https://students.asu.edu/employment',
+                                            status: 'saved',
+                                            notes: 'Lab research position, ~10-15 hrs/week at $18/hr',
+                                        })}
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    >
+                                        + Track
+                                    </button>
+                                </div>
+                                <p style={{ fontSize: '0.7rem', color: '#76B89F', textAlign: 'center' }}>
                                     Impact: +$180/wk → Build your career!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Scholarship Opportunities Section */}
+                    <div style={{ ...cardStyle, gridColumn: 'span 2' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: '#f59e0b', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1rem' }}>🎓</span>
+                                Scholarship Opportunities
+                            </h3>
+                            <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Free money you don't have to repay!</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                            {/* General ASU Scholarship */}
+                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                                <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <p style={{ fontWeight: 600, color: '#111827' }}>🌟 ASU General Scholarship</p>
+                                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Office of Scholarships & Aid</p>
+                                    </div>
+                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#d1fae5', color: '#065f46', borderRadius: '9999px' }}>Open Now</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                    <span style={{ fontWeight: 600, color: '#f59e0b' }}>$500-$2,000</span>
+                                    <span>Due: Mar 1</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <a
+                                        href="https://students.asu.edu/scholarships"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#fef3c7', color: '#92400e', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
+                                    >
+                                        Apply →
+                                    </a>
+                                    <button
+                                        onClick={() => saveOpportunity({
+                                            type: 'scholarship',
+                                            name: 'ASU General Scholarship',
+                                            organization: 'Office of Scholarships & Aid',
+                                            amount: 1000,
+                                            frequency: 'semester',
+                                            deadline: '2026-03-01',
+                                            apply_url: 'https://students.asu.edu/scholarships',
+                                            status: 'saved',
+                                        })}
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#f59e0b', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    >
+                                        + Track
+                                    </button>
+                                </div>
+                                <p style={{ fontSize: '0.7rem', color: '#f59e0b', textAlign: 'center' }}>
+                                    Impact: Free $1,000! No repayment needed
+                                </p>
+                            </div>
+
+                            {/* Essay Contest */}
+                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                                <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <p style={{ fontWeight: 600, color: '#111827' }}>✍️ "Why College" Essay Contest</p>
+                                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>National Essay Competition</p>
+                                    </div>
+                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fef3c7', color: '#92400e', borderRadius: '9999px' }}>500 words</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                    <span style={{ fontWeight: 600, color: '#f59e0b' }}>$750</span>
+                                    <span>Rolling deadline</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <a
+                                        href="https://scholarships.com"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#fef3c7', color: '#92400e', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
+                                    >
+                                        Apply →
+                                    </a>
+                                    <button
+                                        onClick={() => saveOpportunity({
+                                            type: 'scholarship',
+                                            name: 'Why College Essay Contest',
+                                            organization: 'National Essay Competition',
+                                            amount: 750,
+                                            frequency: 'one_time',
+                                            apply_url: 'https://scholarships.com',
+                                            status: 'saved',
+                                            notes: 'Rolling deadline - 500 word essay',
+                                        })}
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#f59e0b', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    >
+                                        + Track
+                                    </button>
+                                </div>
+                                <p style={{ fontSize: '0.7rem', color: '#f59e0b', textAlign: 'center' }}>
+                                    Low effort, high reward - just a short essay!
+                                </p>
+                            </div>
+
+                            {/* STEM Scholarship */}
+                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                                <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <p style={{ fontWeight: 600, color: '#111827' }}>🔬 STEM Excellence Award</p>
+                                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Fulton Schools of Engineering</p>
+                                    </div>
+                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#dbeafe', color: '#1e40af', borderRadius: '9999px' }}>STEM Only</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                    <span style={{ fontWeight: 600, color: '#f59e0b' }}>$1,500</span>
+                                    <span>Due: Apr 15</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <a
+                                        href="https://engineering.asu.edu/scholarships"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#fef3c7', color: '#92400e', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
+                                    >
+                                        Apply →
+                                    </a>
+                                    <button
+                                        onClick={() => saveOpportunity({
+                                            type: 'scholarship',
+                                            name: 'STEM Excellence Award',
+                                            organization: 'Fulton Schools of Engineering',
+                                            amount: 1500,
+                                            frequency: 'semester',
+                                            deadline: '2026-04-15',
+                                            apply_url: 'https://engineering.asu.edu/scholarships',
+                                            status: 'saved',
+                                        })}
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#f59e0b', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    >
+                                        + Track
+                                    </button>
+                                </div>
+                                <p style={{ fontSize: '0.7rem', color: '#f59e0b', textAlign: 'center' }}>
+                                    Impact: Covers ~2 months of expenses!
+                                </p>
+                            </div>
+
+                            {/* First-Gen Scholarship */}
+                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                                <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <p style={{ fontWeight: 600, color: '#111827' }}>💪 First-Gen Student Award</p>
+                                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>ASU Student Success Office</p>
+                                    </div>
+                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fce7f3', color: '#9d174d', borderRadius: '9999px' }}>Identity</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                    <span style={{ fontWeight: 600, color: '#f59e0b' }}>$1,000</span>
+                                    <span>Due: Feb 28</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <a
+                                        href="https://students.asu.edu/first-generation"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#fef3c7', color: '#92400e', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
+                                    >
+                                        Apply →
+                                    </a>
+                                    <button
+                                        onClick={() => saveOpportunity({
+                                            type: 'grant',
+                                            name: 'First-Gen Student Award',
+                                            organization: 'ASU Student Success Office',
+                                            amount: 1000,
+                                            frequency: 'semester',
+                                            deadline: '2026-02-28',
+                                            apply_url: 'https://students.asu.edu/first-generation',
+                                            status: 'saved',
+                                        })}
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#f59e0b', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    >
+                                        + Track
+                                    </button>
+                                </div>
+                                <p style={{ fontSize: '0.7rem', color: '#f59e0b', textAlign: 'center' }}>
+                                    First in your family? You qualify!
                                 </p>
                             </div>
                         </div>

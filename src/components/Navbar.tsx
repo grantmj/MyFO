@@ -3,6 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+const navLinks = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/income", label: "Income" },
+  { href: "/transactions", label: "Transactions" },
+  { href: "/assistant", label: "Ask MyFO" },
+];
+
 export default function Navbar() {
   const pathname = usePathname();
 
@@ -13,19 +20,23 @@ export default function Navbar() {
           <Link href="/" className="flex items-center gap-2">
             <span className="text-lg font-semibold text-gray-900">MyFO</span>
           </Link>
-          <div className="flex items-center gap-6">
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Demo
-            </Link>
-            <Link
-              href="/onboarding"
-              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 transition-colors"
-            >
-              Get started
-            </Link>
+          <div className="flex items-center gap-1">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-accent text-white"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>

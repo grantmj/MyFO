@@ -287,7 +287,7 @@ export default function IncomePage() {
                     {/* Income Sources List */}
                     <div style={cardStyle}>
                         <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
-                            Income Sources ({incomeSources.length})
+                            Net Income ({incomeSources.length})
                         </h3>
                         {incomeSources.length > 0 ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

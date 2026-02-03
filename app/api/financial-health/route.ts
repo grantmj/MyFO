@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { FinancialHealth, IncomeSource, IncomeType, IncomeFrequency, LoanProjection, EmergencyFund } from '@/lib/types';
+export const dynamic = 'force-dynamic';
+import { createServerClient } from '@/lib/supabase';
+import { FinancialHealth, IncomeFrequency, LoanProjection, EmergencyFund } from '@/lib/types';
 
 // Helper to convert frequency to weekly rate
 function getWeeklyRate(amount: number, frequency: IncomeFrequency): number {
@@ -100,6 +101,7 @@ function generateTips(
 
 export async function GET(request: NextRequest) {
     try {
+        const supabase = await createServerClient();
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get('userId');
 
@@ -107,16 +109,21 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'userId required' }, { status: 400 });
         }
 
-        // Fetch all data
-        const [incomeSources, emergencyFundData, plan, snapshot] = await Promise.all([
-            prisma.incomeSource.findMany({ where: { userId } }),
-            prisma.emergencyFund.findUnique({ where: { userId } }),
-            prisma.plan.findFirst({ where: { userId }, orderBy: { createdAt: 'desc' } }),
+        // Fetch all data in parallel
+        const [incomeResult, fundResult, planResult, snapshotResult] = await Promise.all([
+            supabase.from('income_sources').select('*').eq('user_id', userId),
+            supabase.from('emergency_fund').select('*').eq('user_id', userId).single(),
+            supabase.from('plans').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).single(),
             // Get budget snapshot for expense info
             fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/budget-snapshot?userId=${userId}`)
                 .then(res => res.ok ? res.json() : null)
                 .catch(() => null),
         ]);
+
+        const incomeSources = (incomeResult.data || []) as any[];
+        const emergencyFundData = fundResult.data as any;
+        const plan = planResult.data as any;
+        const snapshot = snapshotResult;
 
         // Calculate income by type
         let totalLoans = 0;
@@ -164,7 +171,7 @@ export async function GET(request: NextRequest) {
         if (incomeSources.length === 0 && plan) {
             totalGrants += plan.grants;
             totalLoans += plan.loans;
-            weeklyIncomeRate += (plan.workStudyMonthly + plan.otherIncomeMonthly) / 4.33;
+            weeklyIncomeRate += (plan.work_study_monthly + plan.other_income_monthly) / 4.33;
         }
 
         const totalIncome = totalGrants + totalScholarships + totalJobIncome + totalFamilySupport;
@@ -181,14 +188,14 @@ export async function GET(request: NextRequest) {
         let emergencyFund: EmergencyFund | null = null;
 
         if (emergencyFundData) {
-            const percentComplete = emergencyFundData.targetAmount > 0
-                ? (emergencyFundData.currentAmount / emergencyFundData.targetAmount) * 100
+            const percentComplete = emergencyFundData.target_amount > 0
+                ? (emergencyFundData.current_amount / emergencyFundData.target_amount) * 100
                 : 0;
 
             emergencyFund = {
-                targetAmount: emergencyFundData.targetAmount,
-                currentAmount: emergencyFundData.currentAmount,
-                weeklyContribution: emergencyFundData.weeklyContribution,
+                targetAmount: emergencyFundData.target_amount,
+                currentAmount: emergencyFundData.current_amount,
+                weeklyContribution: emergencyFundData.weekly_contribution,
                 percentComplete,
             };
 
@@ -196,7 +203,7 @@ export async function GET(request: NextRequest) {
                 emergencyFundStatus = 'funded';
             } else if (percentComplete >= 50) {
                 emergencyFundStatus = 'partial';
-            } else if (percentComplete > 0 || emergencyFundData.weeklyContribution > 0) {
+            } else if (percentComplete > 0 || emergencyFundData.weekly_contribution > 0) {
                 emergencyFundStatus = 'building';
             }
         }

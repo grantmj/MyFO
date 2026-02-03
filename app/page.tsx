@@ -24,7 +24,7 @@ export default function Home() {
       {/* Hero with Chatbot Widget */}
       <section className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div 
+          <div
             className="relative rounded-[3rem] overflow-hidden"
             style={{
               backgroundImage: 'url(/campus-background.png)',
@@ -35,7 +35,7 @@ export default function Home() {
           >
             {/* Overlay for better text readability */}
             <div className="absolute inset-0 bg-white/30 backdrop-blur-[2px]" />
-            
+
             <div className="relative z-10 px-8 py-24 sm:px-12 lg:px-16 md:py-32 lg:py-40">
               <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
                 {/* Left side - Content */}
@@ -47,7 +47,7 @@ export default function Home() {
                     AI-powered semester budgeting that answers "can I afford this?" with smart tradeoff analysis and personalized coaching for college students.
                   </p>
                   <div className="mt-8">
-                    <Button variant="primary" href="/onboarding">
+                    <Button variant="primary" href="/register">
                       Get started
                     </Button>
                   </div>
@@ -116,8 +116,8 @@ export default function Home() {
                 Smart semester planning
               </h3>
               <p className="mt-3 text-base text-gray-600 leading-relaxed">
-                Builds a plan to stretch your financial aid, loan disbursements, 
-                and student worker income across the entire semester. Know exactly 
+                Builds a plan to stretch your financial aid, loan disbursements,
+                and student worker income across the entire semester. Know exactly
                 how much you have each month.
               </p>
             </Card>
@@ -126,8 +126,8 @@ export default function Home() {
                 "Can I afford this?" answers
               </h3>
               <p className="mt-3 text-base text-gray-600 leading-relaxed">
-                Get real tradeoff analysis, not just yes/no. See how purchases 
-                impact your runway and discover opportunities to earn extra cash 
+                Get real tradeoff analysis, not just yes/no. See how purchases
+                impact your runway and discover opportunities to earn extra cash
                 when you need it.
               </p>
             </Card>
@@ -136,7 +136,7 @@ export default function Home() {
                 Proactive support
               </h3>
               <p className="mt-3 text-base text-gray-600 leading-relaxed">
-                Receive timely reminders, overspend alerts, and personalized 
+                Receive timely reminders, overspend alerts, and personalized
                 suggestions for side gigs and scholarships you should apply to.
               </p>
             </Card>
@@ -192,9 +192,8 @@ export default function Home() {
                 >
                   {item.q}
                   <span
-                    className={`ml-2 inline-block text-xs transition-transform duration-200 ${
-                      openFaq === i ? "rotate-180" : ""
-                    }`}
+                    className={`ml-2 inline-block text-xs transition-transform duration-200 ${openFaq === i ? "rotate-180" : ""
+                      }`}
                     aria-hidden
                   >
                     ▾
@@ -204,9 +203,8 @@ export default function Home() {
                   id={`faq-answer-${i}`}
                   role="region"
                   aria-labelledby={`faq-question-${i}`}
-                  className={`overflow-hidden transition-all duration-200 ${
-                    openFaq === i ? "max-h-48 opacity-100" : "max-h-0 opacity-0"
-                  }`}
+                  className={`overflow-hidden transition-all duration-200 ${openFaq === i ? "max-h-48 opacity-100" : "max-h-0 opacity-0"
+                    }`}
                 >
                   <p className="pb-6 text-base text-gray-600 leading-relaxed">
                     {item.a}

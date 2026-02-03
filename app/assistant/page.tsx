@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 
 interface Message {
@@ -12,13 +11,7 @@ interface Message {
   content: string;
 }
 
-interface Evaluation {
-  verdict: 'safe' | 'risky' | 'not_recommended';
-  impactOnRunway: string;
-  impactOnSafeToSpend: number;
-}
-
-export default function AssistantPage() {
+function AssistantContent() {
   const { showToast } = useToast();
   const searchParams = useSearchParams();
   const [userId, setUserId] = useState<string | null>(null);
@@ -50,7 +43,7 @@ export default function AssistantPage() {
           content: "Hi! I'm MyFO, your financial copilot. Ask me questions like:\n\n• Can I afford to buy a $90 concert ticket?\n• How am I doing on my budget?\n• What should I cut back on?\n• Can I take a trip that costs $400?\n\nI'll give you honest answers based on your actual budget, not guesses!",
         },
       ]);
-      
+
       setIsInitialized(true);
 
       // Check if there's a query parameter from the homepage
@@ -186,11 +179,10 @@ export default function AssistantPage() {
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    message.role === 'user'
+                  className={`max-w-[80%] rounded-lg px-4 py-2 ${message.role === 'user'
                       ? 'bg-accent text-white'
                       : 'bg-gray-100 text-foreground'
-                  }`}
+                    }`}
                 >
                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 </div>
@@ -254,5 +246,13 @@ export default function AssistantPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AssistantPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>}>
+      <AssistantContent />
+    </Suspense>
   );
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+export const dynamic = 'force-dynamic';
+import { createServerClient } from '@/lib/supabase';
 import { OnboardingData } from '@/lib/types';
 
 /**
@@ -7,29 +8,52 @@ import { OnboardingData } from '@/lib/types';
  */
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createServerClient();
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    
+
     if (!userId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
-    
-    const plan = await prisma.plan.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
-    
+
+    // GET most recent plan
+    const { data: fetchedPlan, error } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    const plan = fetchedPlan as any;
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('Error fetching plan:', error);
+      return NextResponse.json({ error: 'Failed to fetch plan' }, { status: 500 });
+    }
+
     if (!plan) {
       return NextResponse.json({ plan: null });
     }
-    
-    // Parse JSON fields
+
+    // Map Supabase column names to expected format
     const planData = {
-      ...plan,
-      fixedCosts: JSON.parse(plan.fixedCostsJson),
-      variableBudgets: JSON.parse(plan.variableBudgetsJson),
+      id: plan.id,
+      userId: plan.user_id,
+      startDate: plan.start_date,
+      endDate: plan.end_date,
+      disbursementDate: plan.disbursement_date,
+      startingBalance: plan.starting_balance,
+      grants: plan.grants,
+      loans: plan.loans,
+      workStudyMonthly: plan.work_study_monthly,
+      otherIncomeMonthly: plan.other_income_monthly,
+      fixedCosts: plan.fixed_costs,
+      variableBudgets: plan.variable_budgets,
+      createdAt: plan.created_at,
+      updatedAt: plan.updated_at,
     };
-    
+
     return NextResponse.json({ plan: planData });
   } catch (error) {
     console.error('Error fetching plan:', error);
@@ -42,48 +66,62 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createServerClient();
     const body = await request.json();
     const { userId, data } = body as { userId: string; data: OnboardingData };
-    
+
     if (!userId) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
-    
+
     // Create plan
-    const plan = await prisma.plan.create({
-      data: {
-        userId,
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
-        disbursementDate: new Date(data.disbursementDate),
-        startingBalance: data.startingBalance,
+    const { data: plan, error: planError } = await supabase
+      .from('plans')
+      .insert({
+        user_id: userId,
+        start_date: new Date(data.startDate).toISOString().split('T')[0],
+        end_date: new Date(data.endDate).toISOString().split('T')[0],
+        disbursement_date: new Date(data.disbursementDate).toISOString().split('T')[0],
+        starting_balance: data.startingBalance,
         grants: data.grants,
         loans: data.loans,
-        workStudyMonthly: data.monthlyIncome,
-        otherIncomeMonthly: 0,
-        fixedCostsJson: JSON.stringify(data.fixedCosts),
-        variableBudgetsJson: JSON.stringify(data.variableBudgets),
-      },
-    });
-    
+        work_study_monthly: data.monthlyIncome,
+        other_income_monthly: 0,
+        fixed_costs: data.fixedCosts,
+        variable_budgets: data.variableBudgets,
+      } as any)
+      .select()
+      .single();
+
+    if (planError) {
+      console.error('Error creating plan:', planError);
+      return NextResponse.json({ error: 'Failed to create plan' }, { status: 500 });
+    }
+
     // Create planned items if any
     if (data.plannedItems && data.plannedItems.length > 0) {
-      await prisma.plannedItem.createMany({
-        data: data.plannedItems.map(item => ({
-          userId,
-          name: item.name,
-          date: new Date(item.date),
-          amount: item.amount,
-          category: item.category,
-        })),
-      });
+      const { error: itemsError } = await supabase
+        .from('planned_items')
+        .insert(
+          data.plannedItems.map(item => ({
+            user_id: userId,
+            name: item.name,
+            date: new Date(item.date).toISOString().split('T')[0],
+            amount: item.amount,
+            category: item.category,
+          })) as any
+        );
+
+      if (itemsError) {
+        console.error('Error creating planned items:', itemsError);
+      }
     }
-    
+
     // Initialize FAFSA checklist
-    await prisma.fafsaChecklist.create({
-      data: { userId },
-    });
-    
+    await supabase
+      .from('fafsa_checklist')
+      .insert({ user_id: userId } as any);
+
     return NextResponse.json({ plan });
   } catch (error) {
     console.error('Error creating plan:', error);
@@ -96,28 +134,37 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
+    const supabase = await createServerClient();
     const body = await request.json();
     const { planId, data } = body;
-    
+
     if (!planId) {
       return NextResponse.json({ error: 'Plan ID required' }, { status: 400 });
     }
-    
-    const plan = await prisma.plan.update({
-      where: { id: planId },
-      data: {
-        startDate: data.startDate ? new Date(data.startDate) : undefined,
-        endDate: data.endDate ? new Date(data.endDate) : undefined,
-        disbursementDate: data.disbursementDate ? new Date(data.disbursementDate) : undefined,
-        startingBalance: data.startingBalance,
-        grants: data.grants,
-        loans: data.loans,
-        workStudyMonthly: data.monthlyIncome,
-        fixedCostsJson: data.fixedCosts ? JSON.stringify(data.fixedCosts) : undefined,
-        variableBudgetsJson: data.variableBudgets ? JSON.stringify(data.variableBudgets) : undefined,
-      },
-    });
-    
+
+    const updateData: Record<string, unknown> = {};
+    if (data.startDate) updateData.start_date = new Date(data.startDate).toISOString().split('T')[0];
+    if (data.endDate) updateData.end_date = new Date(data.endDate).toISOString().split('T')[0];
+    if (data.disbursementDate) updateData.disbursement_date = new Date(data.disbursementDate).toISOString().split('T')[0];
+    if (data.startingBalance !== undefined) updateData.starting_balance = data.startingBalance;
+    if (data.grants !== undefined) updateData.grants = data.grants;
+    if (data.loans !== undefined) updateData.loans = data.loans;
+    if (data.monthlyIncome !== undefined) updateData.work_study_monthly = data.monthlyIncome;
+    if (data.fixedCosts) updateData.fixed_costs = data.fixedCosts;
+    if (data.variableBudgets) updateData.variable_budgets = data.variableBudgets;
+
+    const { data: plan, error } = await supabase
+      .from('plans')
+      .update(updateData as any)
+      .eq('id', planId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating plan:', error);
+      return NextResponse.json({ error: 'Failed to update plan' }, { status: 500 });
+    }
+
     return NextResponse.json({ plan });
   } catch (error) {
     console.error('Error updating plan:', error);

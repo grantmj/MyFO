@@ -5,19 +5,10 @@ import { useRouter } from "next/navigation";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import Select from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
-import { OnboardingData, FixedCosts, VariableBudgets } from "@/lib/types";
-import { CATEGORIES, CATEGORY_LABELS } from "@/lib/constants";
-import { format } from "date-fns";
+import { addMonths, format } from "date-fns";
 
-const STEPS = [
-  'Basics',
-  'Funding',
-  'Fixed Costs',
-  'Variable Budgets',
-  'Planned Items',
-];
+const STEPS = ['Your Funds', 'Weekly Budget', 'Review'];
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -26,111 +17,84 @@ export default function OnboardingPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Step 1: Basics
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [disbursementDate, setDisbursementDate] = useState('');
-  const [startingBalance, setStartingBalance] = useState('');
-
-  // Step 2: Funding
-  const [grants, setGrants] = useState('');
+  // Step 1: Your Funds
+  const [disbursement, setDisbursement] = useState('');
   const [loans, setLoans] = useState('');
-  const [monthlyIncome, setMonthlyIncome] = useState('');
 
-  // Step 3: Fixed Costs
-  const [rent, setRent] = useState('');
-  const [utilities, setUtilities] = useState('');
-  const [subscriptions, setSubscriptions] = useState('');
-  const [transportation, setTransportation] = useState('');
-
-  // Step 4: Variable Budgets
-  const [groceries, setGroceries] = useState('');
-  const [dining, setDining] = useState('');
-  const [entertainment, setEntertainment] = useState('');
-  const [misc, setMisc] = useState('');
-
-  // Step 5: Planned Items
-  const [plannedItems, setPlannedItems] = useState<Array<{
-    name: string;
-    date: string;
-    amount: string;
-    category: string;
-  }>>([]);
+  // Step 2: Weekly Budget
+  const [weeklyBudget, setWeeklyBudget] = useState('');
 
   useEffect(() => {
     fetchUser();
   }, []);
 
   async function fetchUser() {
-    const res = await fetch('/api/user');
-    const { user } = await res.json();
-    setUserId(user.id);
-  }
-
-  function addPlannedItem() {
-    setPlannedItems([...plannedItems, { name: '', date: '', amount: '', category: CATEGORIES.MISC }]);
-  }
-
-  function removePlannedItem(index: number) {
-    setPlannedItems(plannedItems.filter((_, i) => i !== index));
-  }
-
-  function updatePlannedItem(index: number, field: string, value: string) {
-    const updated = [...plannedItems];
-    updated[index] = { ...updated[index], [field]: value };
-    setPlannedItems(updated);
+    try {
+      const res = await fetch('/api/user');
+      const { user } = await res.json();
+      if (user) {
+        setUserId(user.id);
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+    }
   }
 
   function canProceed() {
     if (currentStep === 0) {
-      return startDate && endDate && disbursementDate && startingBalance;
+      return disbursement && loans;
     }
     if (currentStep === 1) {
-      return grants && loans && monthlyIncome;
-    }
-    if (currentStep === 2) {
-      return rent && utilities && subscriptions && transportation;
-    }
-    if (currentStep === 3) {
-      return groceries && dining && entertainment && misc;
+      return weeklyBudget;
     }
     return true;
   }
 
+  // Calculate derived values for summary
+  const disbursementAmount = parseFloat(disbursement) || 0;
+  const loansAmount = parseFloat(loans) || 0;
+  const grantsAmount = Math.max(0, disbursementAmount - loansAmount);
+  const weeklyAmount = parseFloat(weeklyBudget) || 0;
+  const semesterWeeks = 16;
+  const totalBudgetNeeded = weeklyAmount * semesterWeeks;
+  const willLastWeeks = weeklyAmount > 0 ? Math.floor(disbursementAmount / weeklyAmount) : 0;
+
   async function handleSubmit() {
-    if (!userId) return;
+    if (!userId) {
+      showToast('Please log in first', 'error');
+      return;
+    }
 
     try {
       setLoading(true);
 
-      const data: OnboardingData = {
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        disbursementDate: new Date(disbursementDate),
-        startingBalance: parseFloat(startingBalance),
-        grants: parseFloat(grants),
-        loans: parseFloat(loans),
-        monthlyIncome: parseFloat(monthlyIncome),
+      // Auto-calculate dates - start today, end 4 months from now
+      const startDate = new Date();
+      const endDate = addMonths(startDate, 4);
+      const disbursementDate = new Date();
+
+      // Build a simplified plan with auto-calculated values
+      const data = {
+        startDate,
+        endDate,
+        disbursementDate,
+        startingBalance: disbursementAmount,
+        grants: grantsAmount,
+        loans: loansAmount,
+        monthlyIncome: 0, // Can update via bot later
         fixedCosts: {
-          rent: parseFloat(rent),
-          utilities: parseFloat(utilities),
-          subscriptions: parseFloat(subscriptions),
-          transportation: parseFloat(transportation),
+          rent: 0,
+          utilities: 0,
+          subscriptions: 0,
+          transportation: 0,
         },
         variableBudgets: {
-          groceries: parseFloat(groceries),
-          dining: parseFloat(dining),
-          entertainment: parseFloat(entertainment),
-          misc: parseFloat(misc),
+          groceries: weeklyAmount * 0.4, // 40% of weekly budget
+          dining: weeklyAmount * 0.25,    // 25%
+          entertainment: weeklyAmount * 0.2, // 20%
+          misc: weeklyAmount * 0.15,      // 15%
         },
-        plannedItems: plannedItems
-          .filter(item => item.name && item.date && item.amount)
-          .map(item => ({
-            name: item.name,
-            date: new Date(item.date),
-            amount: parseFloat(item.amount),
-            category: item.category as any,
-          })),
+        plannedItems: [],
       };
 
       const res = await fetch('/api/plan', {
@@ -140,8 +104,8 @@ export default function OnboardingPage() {
       });
 
       if (res.ok) {
-        showToast('Plan created successfully!', 'success');
-        router.push('/');
+        showToast('Plan created! Let\'s see your dashboard.', 'success');
+        router.push('/dashboard');
       } else {
         showToast('Failed to create plan', 'error');
       }
@@ -154,257 +118,320 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-medium text-foreground">Welcome to MyFO</h1>
-          <p className="mt-2 text-sm text-muted">
-            Let's set up your semester budget plan in {STEPS.length} simple steps
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #eef2ff 0%, #ffffff 50%, #faf5ff 100%)',
+      padding: '3rem 1rem'
+    }}>
+      <div style={{ maxWidth: '32rem', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <h1 style={{
+            fontSize: '2rem',
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginBottom: '0.5rem'
+          }}>
+            Welcome to MyFO
+          </h1>
+          <p style={{ color: '#6b7280' }}>
+            Quick setup – just {STEPS.length} steps
           </p>
         </div>
 
         {/* Stepper */}
-        <div className="mb-8 flex items-center justify-between">
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '0.5rem',
+          marginBottom: '2rem'
+        }}>
           {STEPS.map((step, index) => (
-            <div key={index} className="flex items-center">
+            <div
+              key={index}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium ${
-                  index <= currentStep
-                    ? 'bg-accent text-white'
-                    : 'bg-gray-200 text-muted'
-                }`}
+                style={{
+                  width: '2.5rem',
+                  height: '2.5rem',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  background: index <= currentStep
+                    ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+                    : '#e5e7eb',
+                  color: index <= currentStep ? 'white' : '#9ca3af',
+                  transition: 'all 0.3s'
+                }}
               >
-                {index + 1}
+                {index < currentStep ? '✓' : index + 1}
               </div>
               {index < STEPS.length - 1 && (
                 <div
-                  className={`hidden sm:block h-0.5 w-12 lg:w-20 ${
-                    index < currentStep ? 'bg-accent' : 'bg-gray-200'
-                  }`}
+                  style={{
+                    width: '3rem',
+                    height: '2px',
+                    background: index < currentStep
+                      ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+                      : '#e5e7eb',
+                    transition: 'all 0.3s'
+                  }}
                 />
               )}
             </div>
           ))}
         </div>
 
-        <Card>
-          <h2 className="text-xl font-medium text-foreground mb-6">
-            Step {currentStep + 1}: {STEPS[currentStep]}
+        {/* Card */}
+        <div style={{
+          background: 'white',
+          borderRadius: '1.5rem',
+          padding: '2rem',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+          border: '1px solid #f3f4f6'
+        }}>
+          <h2 style={{
+            fontSize: '1.25rem',
+            fontWeight: 600,
+            color: '#111827',
+            marginBottom: '0.5rem'
+          }}>
+            {STEPS[currentStep]}
           </h2>
 
-          {/* Step 1: Basics */}
+          {/* Step 1: Your Funds */}
           {currentStep === 0 && (
-            <div className="space-y-4">
-              <Input
-                type="date"
-                label="Semester Start Date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-              <Input
-                type="date"
-                label="Semester End Date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-              <Input
-                type="date"
-                label="Disbursement/Refund Date"
-                value={disbursementDate}
-                onChange={(e) => setDisbursementDate(e.target.value)}
-              />
-              <Input
-                type="number"
-                label="Starting Balance on Disbursement Date ($)"
-                value={startingBalance}
-                onChange={(e) => setStartingBalance(e.target.value)}
-                placeholder="2000"
-              />
-            </div>
-          )}
-
-          {/* Step 2: Funding */}
-          {currentStep === 1 && (
-            <div className="space-y-4">
-              <Input
-                type="number"
-                label="Grants/Scholarships for Semester ($)"
-                value={grants}
-                onChange={(e) => setGrants(e.target.value)}
-                placeholder="3500"
-              />
-              <Input
-                type="number"
-                label="Loans Accepted for Semester ($)"
-                value={loans}
-                onChange={(e) => setLoans(e.target.value)}
-                placeholder="2500"
-              />
-              <Input
-                type="number"
-                label="Monthly Income (Work Study / Part-Time) ($)"
-                value={monthlyIncome}
-                onChange={(e) => setMonthlyIncome(e.target.value)}
-                placeholder="600"
-              />
-            </div>
-          )}
-
-          {/* Step 3: Fixed Costs */}
-          {currentStep === 2 && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted mb-4">Enter your monthly fixed costs</p>
-              <Input
-                type="number"
-                label="Rent (Monthly, $)"
-                value={rent}
-                onChange={(e) => setRent(e.target.value)}
-                placeholder="800"
-              />
-              <Input
-                type="number"
-                label="Utilities (Monthly, $)"
-                value={utilities}
-                onChange={(e) => setUtilities(e.target.value)}
-                placeholder="150"
-              />
-              <Input
-                type="number"
-                label="Subscriptions (Monthly, $)"
-                value={subscriptions}
-                onChange={(e) => setSubscriptions(e.target.value)}
-                placeholder="50"
-              />
-              <Input
-                type="number"
-                label="Transportation (Monthly, $)"
-                value={transportation}
-                onChange={(e) => setTransportation(e.target.value)}
-                placeholder="100"
-              />
-            </div>
-          )}
-
-          {/* Step 4: Variable Budgets */}
-          {currentStep === 3 && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted mb-4">Set your weekly variable budgets</p>
-              <Input
-                type="number"
-                label="Groceries (Weekly, $)"
-                value={groceries}
-                onChange={(e) => setGroceries(e.target.value)}
-                placeholder="80"
-              />
-              <Input
-                type="number"
-                label="Dining Out (Weekly, $)"
-                value={dining}
-                onChange={(e) => setDining(e.target.value)}
-                placeholder="50"
-              />
-              <Input
-                type="number"
-                label="Entertainment (Weekly, $)"
-                value={entertainment}
-                onChange={(e) => setEntertainment(e.target.value)}
-                placeholder="40"
-              />
-              <Input
-                type="number"
-                label="Miscellaneous (Weekly, $)"
-                value={misc}
-                onChange={(e) => setMisc(e.target.value)}
-                placeholder="30"
-              />
-            </div>
-          )}
-
-          {/* Step 5: Planned Items */}
-          {currentStep === 4 && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted mb-4">
-                Add any big planned purchases or trips (optional, 0-5 items)
+            <div>
+              <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+                After tuition is paid, how much money hits your account?
               </p>
-              {plannedItems.map((item, index) => (
-                <Card key={index} className="bg-gray-50">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium text-foreground">Item {index + 1}</h4>
-                      <button
-                        onClick={() => removePlannedItem(index)}
-                        className="text-xs text-red-600 hover:underline"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <Input
-                      label="Name"
-                      value={item.name}
-                      onChange={(e) => updatePlannedItem(index, 'name', e.target.value)}
-                      placeholder="Spring break trip"
-                    />
-                    <Input
-                      type="date"
-                      label="Date"
-                      value={item.date}
-                      onChange={(e) => updatePlannedItem(index, 'date', e.target.value)}
-                    />
-                    <Input
-                      type="number"
-                      label="Amount ($)"
-                      value={item.amount}
-                      onChange={(e) => updatePlannedItem(index, 'amount', e.target.value)}
-                      placeholder="400"
-                    />
-                    <Select
-                      label="Category"
-                      value={item.category}
-                      onChange={(e) => updatePlannedItem(index, 'category', e.target.value)}
-                      options={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({
-                        value,
-                        label,
-                      }))}
-                    />
-                  </div>
-                </Card>
-              ))}
-              {plannedItems.length < 5 && (
-                <Button variant="secondary" onClick={addPlannedItem} className="w-full">
-                  + Add Planned Item
-                </Button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>
+                    Total Disbursement (after tuition)
+                  </label>
+                  <input
+                    type="number"
+                    value={disbursement}
+                    onChange={(e) => setDisbursement(e.target.value)}
+                    placeholder="5000"
+                    style={{
+                      width: '100%',
+                      padding: '0.875rem 1rem',
+                      borderRadius: '0.75rem',
+                      border: '1px solid #e5e7eb',
+                      fontSize: '1.125rem',
+                      fontWeight: 600,
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
+                    This is what shows up in your bank from financial aid
+                  </p>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>
+                    How much of that is from loans?
+                  </label>
+                  <input
+                    type="number"
+                    value={loans}
+                    onChange={(e) => setLoans(e.target.value)}
+                    placeholder="2000"
+                    style={{
+                      width: '100%',
+                      padding: '0.875rem 1rem',
+                      borderRadius: '0.75rem',
+                      border: '1px solid #e5e7eb',
+                      fontSize: '1.125rem',
+                      fontWeight: 600,
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
+                    This helps track how much debt you're taking on
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Weekly Budget */}
+          {currentStep === 1 && (
+            <div>
+              <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+                How much do you want to spend each week on everything (food, fun, etc)?
+              </p>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem' }}>
+                  Weekly Budget
+                </label>
+                <input
+                  type="number"
+                  value={weeklyBudget}
+                  onChange={(e) => setWeeklyBudget(e.target.value)}
+                  placeholder="200"
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    borderRadius: '0.75rem',
+                    border: '2px solid #6366f1',
+                    fontSize: '1.5rem',
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.5rem', textAlign: 'center' }}>
+                  Tip: Start with $150-$250/week for a typical student
+                </p>
+              </div>
+
+              {/* Quick calculation preview */}
+              {weeklyBudget && disbursement && (
+                <div style={{
+                  marginTop: '1.5rem',
+                  padding: '1rem',
+                  background: '#f0fdf4',
+                  borderRadius: '0.75rem',
+                  border: '1px solid #bbf7d0'
+                }}>
+                  <p style={{ fontSize: '0.875rem', color: '#166534', fontWeight: 500 }}>
+                    💡 At ${weeklyAmount}/week, your ${disbursementAmount} will last about <strong>{willLastWeeks} weeks</strong>
+                  </p>
+                </div>
               )}
             </div>
           )}
 
+          {/* Step 3: Review */}
+          {currentStep === 2 && (
+            <div>
+              <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+                Here's your plan. You can always adjust these in settings or by chatting with MyFO.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {/* Summary Cards */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '0.75rem'
+                }}>
+                  <div style={{ padding: '1rem', background: '#f9fafb', borderRadius: '0.75rem' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Total Funds</p>
+                    <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827' }}>${disbursementAmount.toLocaleString()}</p>
+                  </div>
+                  <div style={{ padding: '1rem', background: '#fef2f2', borderRadius: '0.75rem' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>From Loans</p>
+                    <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ef4444' }}>${loansAmount.toLocaleString()}</p>
+                  </div>
+                  <div style={{ padding: '1rem', background: '#f0fdf4', borderRadius: '0.75rem' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Grants/Scholarships</p>
+                    <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#10b981' }}>${grantsAmount.toLocaleString()}</p>
+                  </div>
+                  <div style={{ padding: '1rem', background: '#eef2ff', borderRadius: '0.75rem' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Weekly Budget</p>
+                    <p style={{ fontSize: '1.25rem', fontWeight: 700, color: '#6366f1' }}>${weeklyAmount}/wk</p>
+                  </div>
+                </div>
+
+                {/* Runway estimate */}
+                <div style={{
+                  padding: '1rem',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  borderRadius: '0.75rem',
+                  textAlign: 'center'
+                }}>
+                  <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.8)' }}>Your money should last</p>
+                  <p style={{ fontSize: '2rem', fontWeight: 700, color: 'white' }}>{willLastWeeks} weeks</p>
+                  <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>
+                    ~{Math.round(willLastWeeks / 4)} months
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Navigation */}
-          <div className="mt-8 flex items-center justify-between">
-            <Button
-              variant="ghost"
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginTop: '2rem',
+            paddingTop: '1.5rem',
+            borderTop: '1px solid #f3f4f6'
+          }}>
+            <button
               onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
               disabled={currentStep === 0}
+              style={{
+                padding: '0.75rem 1.5rem',
+                borderRadius: '0.75rem',
+                border: 'none',
+                background: 'transparent',
+                color: currentStep === 0 ? '#d1d5db' : '#6b7280',
+                fontWeight: 500,
+                cursor: currentStep === 0 ? 'default' : 'pointer'
+              }}
             >
               ← Back
-            </Button>
+            </button>
+
             {currentStep < STEPS.length - 1 ? (
-              <Button
-                variant="primary"
+              <button
                 onClick={() => setCurrentStep(currentStep + 1)}
                 disabled={!canProceed()}
+                style={{
+                  padding: '0.75rem 2rem',
+                  borderRadius: '0.75rem',
+                  border: 'none',
+                  background: canProceed()
+                    ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+                    : '#e5e7eb',
+                  color: canProceed() ? 'white' : '#9ca3af',
+                  fontWeight: 600,
+                  cursor: canProceed() ? 'pointer' : 'default',
+                  boxShadow: canProceed() ? '0 4px 12px rgba(99, 102, 241, 0.3)' : 'none'
+                }}
               >
                 Next →
-              </Button>
+              </button>
             ) : (
-              <Button
-                variant="primary"
+              <button
                 onClick={handleSubmit}
-                disabled={!canProceed() || loading}
+                disabled={loading}
+                style={{
+                  padding: '0.75rem 2rem',
+                  borderRadius: '0.75rem',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: 'white',
+                  fontWeight: 600,
+                  cursor: loading ? 'default' : 'pointer',
+                  opacity: loading ? 0.7 : 1,
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                }}
               >
-                {loading ? 'Creating...' : 'Complete Setup'}
-              </Button>
+                {loading ? 'Creating...' : 'Start Using MyFO →'}
+              </button>
             )}
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );

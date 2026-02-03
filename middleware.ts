@@ -15,13 +15,14 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(url);
     }
 
-    // Redirect authenticated users from login/register to dashboard
+    // Redirect authenticated users from home/login/register to dashboard
     const authPaths = ['/login', '/register'];
+    const isExactHomePath = request.nextUrl.pathname === '/';
     const isAuthPath = authPaths.some(path =>
         request.nextUrl.pathname === path
     );
 
-    if (isAuthPath && userId) {
+    if ((isAuthPath || isExactHomePath) && userId) {
         const url = request.nextUrl.clone();
         url.pathname = '/dashboard';
         return NextResponse.redirect(url);

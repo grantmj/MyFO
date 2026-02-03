@@ -1,17 +1,134 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import OpenAI from 'openai';
-import { createServerClient } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { calculateBudgetSnapshot, evaluatePurchase } from '@/lib/budgetEngine';
 import { CATEGORY_LABELS } from '@/lib/constants';
 import { format } from 'date-fns';
+
+// Simple Supabase client for DB updates
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+// Function definitions for OpenAI
+const functions: OpenAI.Chat.ChatCompletionTool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'update_plan',
+      description: 'Update the user\'s financial plan. Call this when the user wants to change their disbursement amount, loan amount, weekly budget, or other plan values.',
+      parameters: {
+        type: 'object',
+        properties: {
+          loans: {
+            type: 'number',
+            description: 'New loan amount for the semester'
+          },
+          starting_balance: {
+            type: 'number',
+            description: 'New total disbursement/starting balance'
+          },
+          grants: {
+            type: 'number',
+            description: 'New grants/scholarships amount'
+          },
+          weekly_budget: {
+            type: 'number',
+            description: 'New weekly spending budget'
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_transaction',
+      description: 'Add a new spending transaction. Call this when the user mentions they spent money on something.',
+      parameters: {
+        type: 'object',
+        properties: {
+          amount: {
+            type: 'number',
+            description: 'Transaction amount in dollars'
+          },
+          description: {
+            type: 'string',
+            description: 'What the money was spent on'
+          },
+          category: {
+            type: 'string',
+            enum: ['groceries', 'dining', 'entertainment', 'transportation', 'rent', 'utilities', 'subscriptions', 'misc'],
+            description: 'Category of the transaction'
+          }
+        },
+        required: ['amount', 'description', 'category']
+      }
+    }
+  }
+];
+
+// Execute function calls
+async function executeFunction(name: string, args: any, userId: string, planId: string) {
+  if (name === 'update_plan') {
+    const updates: any = {};
+    if (args.loans !== undefined) updates.loans = args.loans;
+    if (args.starting_balance !== undefined) updates.starting_balance = args.starting_balance;
+    if (args.grants !== undefined) updates.grants = args.grants;
+    if (args.weekly_budget !== undefined) {
+      // Update variable budgets proportionally
+      updates.variable_budgets = {
+        groceries: args.weekly_budget * 0.4,
+        dining: args.weekly_budget * 0.25,
+        entertainment: args.weekly_budget * 0.2,
+        misc: args.weekly_budget * 0.15,
+      };
+    }
+
+    if (Object.keys(updates).length > 0) {
+      const { error } = await supabase
+        .from('plans')
+        .update(updates)
+        .eq('id', planId);
+
+      if (error) {
+        console.error('Error updating plan:', error);
+        return { success: false, error: error.message };
+      }
+      return { success: true, updated: Object.keys(updates) };
+    }
+    return { success: false, error: 'No updates provided' };
+  }
+
+  if (name === 'add_transaction') {
+    const { error } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: userId,
+        amount: args.amount,
+        description: args.description,
+        category: args.category,
+        date: new Date().toISOString(),
+      });
+
+    if (error) {
+      console.error('Error adding transaction:', error);
+      return { success: false, error: error.message };
+    }
+    return { success: true, amount: args.amount, category: args.category };
+  }
+
+  return { success: false, error: 'Unknown function' };
+}
 
 /**
  * POST - Chat with MyFO assistant
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient();
     const body = await request.json();
     const { userId, message, conversationHistory = [] } = body;
 
@@ -110,51 +227,34 @@ CURRENT BUDGET STATUS (use these exact numbers, never invent your own):
 - Runway date: ${snapshot.runwayDate ? format(snapshot.runwayDate, 'MMM dd, yyyy') : 'Fully funded through semester end'}
 - Budget status: ${snapshot.status === 'ahead' ? 'AHEAD of plan' : snapshot.status === 'behind' ? 'BEHIND plan' : 'ON TRACK'} by $${Math.abs(snapshot.aheadBehind).toFixed(2)}
 - Weeks elapsed: ${snapshot.weeksElapsed} of ${snapshot.weeksTotal}
-- Expected spend to date: $${snapshot.expectedSpendToDate.toFixed(2)}
-- Actual spend to date: $${snapshot.actualSpendToDate.toFixed(2)}
 
-UPCOMING PLANNED ITEMS (next 7 days):
-${snapshot.plannedNext7Days.length > 0
-        ? snapshot.plannedNext7Days.map(item => `- ${item.name}: $${item.amount.toFixed(2)} on ${format(item.date, 'MMM dd')}`).join('\n')
-        : '- None'}
+CURRENT PLAN VALUES:
+- Total disbursement: $${plan.starting_balance}
+- Loans: $${plan.loans}
+- Grants/Scholarships: $${plan.grants}
+- Weekly variable budget: $${Object.values(variableBudgets || {}).reduce((a: number, b: any) => a + (Number(b) || 0), 0).toFixed(0)}
 
-TOP SPENDING CATEGORIES (last 14 days):
-${snapshot.topCategories.length > 0
-        ? snapshot.topCategories.map(cat => `- ${CATEGORY_LABELS[cat.category]}: $${cat.amount.toFixed(2)}`).join('\n')
-        : '- No transactions yet'}
-
-WEEKLY BUDGETS:
-- Fixed costs per week: $${snapshot.fixedPerWeek.toFixed(2)}
-- Variable budget per week: $${snapshot.variableWeeklyTotal.toFixed(2)}
 ${evaluation ? `
 PURCHASE EVALUATION for $${purchaseAmount}:
 - Verdict: ${evaluation.verdict.toUpperCase()}
 - Impact on safe-to-spend: Would leave $${evaluation.impactOnSafeToSpend.toFixed(2)} for the week
-- Impact on runway: ${evaluation.impactOnRunway}
 ` : ''}
 `;
 
-    const systemPrompt = `You are MyFO (My Financial Officer), a helpful student financial health copilot. Your role is to help college students make informed spending decisions.
+    const systemPrompt = `You are MyFO (My Financial Officer), a helpful student financial assistant. 
 
-CRITICAL RULES:
-1. ALWAYS use the exact numbers provided in the budget context. NEVER make up or hallucinate financial numbers.
-2. When a student asks "Can I afford X?", provide a structured response with:
-   - Clear recommendation (Yes/Risky/No) based on the deterministic evaluation
-   - Impact on their safe-to-spend and runway
-   - 2-3 alternative options or "make it work" strategies
-   - One specific next best action
-3. Be encouraging but honest. If they're behind, acknowledge it but focus on actionable steps.
-4. Keep responses concise and actionable - students are busy.
-5. This is NOT financial advice - you're a budgeting tool that helps with planning.
+IMPORTANT: You have the ability to UPDATE THE DATABASE when the user wants to change their financial info.
+- If they say they have a different loan amount, USE update_plan to change it
+- If they mention spending money on something, USE add_transaction to log it
+- Always confirm what you updated after making changes
 
-When discussing purchases:
-- "Safe" = within safe-to-spend budget
-- "Risky" = affordable but would eat into buffer/runway
-- "Not recommended" = would exceed remaining funds
+When making updates:
+1. Use the update_plan function for: loan amounts, disbursement, grants, weekly budget
+2. Use the add_transaction function for: recording purchases/spending
 
-Always offer creative alternatives and budgeting strategies when purchases are risky or not recommended.`;
+Be helpful, concise, and proactive about updating their info when they share new financial details.`;
 
-    // Call OpenAI
+    // Call OpenAI with function calling
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
@@ -166,19 +266,60 @@ Always offer creative alternatives and budgeting strategies when purchases are r
       { role: 'user', content: message },
     ];
 
-    const completion = await openai.chat.completions.create({
+    let completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages,
+      tools: functions,
+      tool_choice: 'auto',
       temperature: 0.7,
       max_tokens: 500,
     });
 
-    const reply = completion.choices[0].message.content || 'Sorry, I could not generate a response.';
+    let assistantMessage = completion.choices[0].message;
+    let functionResults: string[] = [];
+
+    // Handle function calls
+    if (assistantMessage.tool_calls) {
+      for (const toolCall of assistantMessage.tool_calls) {
+        const fn = (toolCall as any).function;
+        if (!fn) continue;
+        const args = JSON.parse(fn.arguments);
+        const result = await executeFunction(
+          fn.name,
+          args,
+          userId,
+          plan.id
+        );
+        functionResults.push(
+          `${fn.name}: ${result.success ? 'Updated successfully' : result.error}`
+        );
+      }
+
+      // Get final response after function calls
+      messages.push(assistantMessage);
+      messages.push({
+        role: 'tool',
+        tool_call_id: (assistantMessage.tool_calls[0] as any).id,
+        content: JSON.stringify({ results: functionResults }),
+      });
+
+      completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages,
+        temperature: 0.7,
+        max_tokens: 500,
+      });
+
+      assistantMessage = completion.choices[0].message;
+    }
+
+    const reply = assistantMessage.content || 'Sorry, I could not generate a response.';
 
     return NextResponse.json({
       reply,
       snapshot,
       evaluation,
+      updates: functionResults.length > 0 ? functionResults : undefined,
     });
   } catch (error: any) {
     console.error('Error in assistant:', error);

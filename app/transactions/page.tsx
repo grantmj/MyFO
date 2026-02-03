@@ -21,6 +21,7 @@ interface Transaction {
 export default function TransactionsPage() {
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +35,12 @@ export default function TransactionsPage() {
   const [descColumn, setDescColumn] = useState('');
   const [amountColumn, setAmountColumn] = useState('');
   const [amountConvention, setAmountConvention] = useState<'positive-spend' | 'negative-spend'>('positive-spend');
+
+  // PDF parsing state
+  const [pdfParsing, setPdfParsing] = useState(false);
+  const [parsedTransactions, setParsedTransactions] = useState<any[]>([]);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [editableTransactions, setEditableTransactions] = useState<any[]>([]);
 
   useEffect(() => {
     initializePage();
@@ -186,6 +193,93 @@ export default function TransactionsPage() {
     }
   }
 
+  // PDF Upload handlers
+  async function handlePdfSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      showToast('Please upload a PDF file', 'error');
+      return;
+    }
+
+    setPdfParsing(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/transactions/parse-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setParsedTransactions(data.transactions);
+        setEditableTransactions(data.transactions.map((t: any) => ({ ...t })));
+        setShowPdfPreview(true);
+        showToast(`Found ${data.count} transactions!`, 'success');
+      } else {
+        showToast(data.error || 'Failed to parse PDF', 'error');
+      }
+    } catch (error) {
+      console.error('Error parsing PDF:', error);
+      showToast('Failed to parse PDF', 'error');
+    } finally {
+      setPdfParsing(false);
+    }
+  }
+
+  async function confirmPdfImport() {
+    if (!userId) return;
+
+    try {
+      setUploading(true);
+
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          transactions: editableTransactions,
+          source: 'pdf',
+        }),
+      });
+
+      if (res.ok) {
+        const { count } = await res.json();
+        showToast(`Imported ${count} transactions from PDF!`, 'success');
+        await fetchTransactions(userId);
+        cancelPdfImport();
+      } else {
+        showToast('Failed to import transactions', 'error');
+      }
+    } catch (error) {
+      console.error('Error importing PDF transactions:', error);
+      showToast('Failed to import transactions', 'error');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function cancelPdfImport() {
+    setParsedTransactions([]);
+    setEditableTransactions([]);
+    setShowPdfPreview(false);
+    if (pdfInputRef.current) {
+      pdfInputRef.current.value = '';
+    }
+  }
+
+  function updateParsedCategory(index: number, category: string) {
+    const updated = [...editableTransactions];
+    updated[index].category = category;
+    setEditableTransactions(updated);
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -205,6 +299,92 @@ export default function TransactionsPage() {
             Import and manage your spending
           </p>
         </div>
+
+        {/* PDF Import Section */}
+        <Card className="mb-4">
+          <h2 className="text-base font-medium text-foreground mb-2">Import from PDF</h2>
+          <p className="text-xs text-muted mb-3">
+            Upload a credit card statement PDF - we&apos;ll automatically extract and categorize transactions using AI.
+          </p>
+          
+          <div className="space-y-3">
+            <input
+              ref={pdfInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={handlePdfSelect}
+              disabled={pdfParsing}
+              className="block w-full text-xs text-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-accent file:text-white hover:file:bg-accent/90 disabled:opacity-50"
+            />
+
+            {pdfParsing && (
+              <div className="flex items-center gap-2 text-sm text-muted">
+                <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full"></div>
+                <span>Parsing PDF and extracting transactions...</span>
+              </div>
+            )}
+
+            {showPdfPreview && !pdfParsing && (
+              <div className="pt-3 border-t border-border">
+                <h3 className="text-xs font-medium text-foreground mb-3">
+                  Found {editableTransactions.length} transactions - Review and confirm
+                </h3>
+                <div className="overflow-x-auto max-h-96 overflow-y-auto border border-border rounded">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-50 sticky top-0">
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 px-2 font-medium text-muted">Date</th>
+                        <th className="text-left py-2 px-2 font-medium text-muted">Description</th>
+                        <th className="text-left py-2 px-2 font-medium text-muted">Amount</th>
+                        <th className="text-left py-2 px-2 font-medium text-muted">Category</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {editableTransactions.map((transaction, index) => (
+                        <tr key={index} className="border-b border-border last:border-0">
+                          <td className="py-2 px-2 text-foreground whitespace-nowrap">
+                            {format(new Date(transaction.date), 'MMM dd, yyyy')}
+                          </td>
+                          <td className="py-2 px-2 text-foreground">
+                            {transaction.description}
+                          </td>
+                          <td className="py-2 px-2 text-foreground font-medium">
+                            ${transaction.amount.toFixed(2)}
+                          </td>
+                          <td className="py-2 px-2">
+                            <select
+                              value={transaction.category}
+                              onChange={(e) => updateParsedCategory(index, e.target.value)}
+                              className="text-xs border border-border rounded px-2 py-1 text-foreground bg-white focus:outline-none focus:ring-1 focus:ring-accent"
+                            >
+                              {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    variant="primary"
+                    onClick={confirmPdfImport}
+                    disabled={uploading}
+                  >
+                    {uploading ? 'Importing...' : `Import ${editableTransactions.length} Transactions`}
+                  </Button>
+                  <Button variant="ghost" onClick={cancelPdfImport}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
 
         {/* CSV Import Section */}
         <Card className="mb-4">

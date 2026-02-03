@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerClient();
     const body = await request.json();
-    const { userId, transactions, amountConvention = 'positive-spend' } = body as {
+    const { userId, transactions, amountConvention = 'positive-spend', source = 'csv' } = body as {
       userId: string;
       transactions: Array<{
         date: string;
@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
         amount: number;
       }>;
       amountConvention?: 'positive-spend' | 'negative-spend';
+      source?: 'csv' | 'pdf' | 'manual';
     };
 
     if (!userId) {
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
         amount,
         category,
         merchant_guess: t.description.substring(0, 50),
-        source: 'csv',
+        source,
       };
     });
 

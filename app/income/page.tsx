@@ -5,7 +5,7 @@ import { useToast } from "@/components/ui/Toast";
 import { IncomeSource, IncomeType, IncomeFrequency, FinancialHealth, INCOME_TYPE_LABELS, INCOME_FREQUENCY_LABELS } from "@/lib/types";
 
 const INCOME_TYPE_COLORS: Record<IncomeType, string> = {
-    job: '#14b8a6',
+    job: '#76B89F',
     scholarship: '#f59e0b',
     grant: '#10b981',
     loan: '#ef4444',
@@ -181,7 +181,7 @@ export default function IncomePage() {
         return (
             <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', border: '4px solid #e5e7eb', borderTopColor: '#14b8a6', animation: 'spin 1s linear infinite' }} />
+                    <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', border: '4px solid #e5e7eb', borderTopColor: '#76B89F', animation: 'spin 1s linear infinite' }} />
                     <p style={{ color: '#4b5563', fontWeight: 500 }}>Loading income data...</p>
                 </div>
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -211,12 +211,12 @@ export default function IncomePage() {
                         style={{
                             padding: '0.75rem 1.5rem',
                             borderRadius: '0.75rem',
-                            background: '#14b8a6',
+                            background: '#76B89F',
                             color: 'white',
                             fontWeight: 600,
                             border: 'none',
                             cursor: 'pointer',
-                            boxShadow: '0 4px 6px rgba(20, 184, 166, 0.25)'
+                            boxShadow: '0 4px 6px rgba(118, 184, 159, 0.25)'
                         }}
                     >
                         + Add Income Source
@@ -232,7 +232,7 @@ export default function IncomePage() {
                             borderRadius: '50%',
                             background: `conic-gradient(
                 ${financialHealth.healthLevel === 'excellent' ? '#10b981' :
-                                    financialHealth.healthLevel === 'good' ? '#14b8a6' :
+                                    financialHealth.healthLevel === 'good' ? '#76B89F' :
                                         financialHealth.healthLevel === 'fair' ? '#f59e0b' : '#ef4444'} ${financialHealth.healthScore * 3.6}deg, 
                 #e5e7eb ${financialHealth.healthScore * 3.6}deg
               )`,
@@ -257,9 +257,9 @@ export default function IncomePage() {
                         </div>
                         <div style={{ flex: 1 }}>
                             <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#111827', marginBottom: '0.25rem' }}>
-                                Financial Health: <span style={{
+                                Financial Health:                                 <span style={{
                                     color: financialHealth.healthLevel === 'excellent' ? '#10b981' :
-                                        financialHealth.healthLevel === 'good' ? '#14b8a6' :
+                                        financialHealth.healthLevel === 'good' ? '#76B89F' :
                                             financialHealth.healthLevel === 'fair' ? '#f59e0b' : '#ef4444',
                                     textTransform: 'capitalize'
                                 }}>{financialHealth.healthLevel}</span>
@@ -273,7 +273,7 @@ export default function IncomePage() {
                             {financialHealth.tips.length > 0 && (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                     {financialHealth.tips.map((tip, i) => (
-                                        <span key={i} style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem', borderRadius: '9999px', backgroundColor: '#ccfbf1', color: '#0f766e' }}>
+                                        <span key={i} style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem', borderRadius: '9999px', backgroundColor: '#E8F3EF', color: '#2d5a44' }}>
                                             {tip}
                                         </span>
                                     ))}
@@ -340,7 +340,7 @@ export default function IncomePage() {
                         ) : (
                             <div style={{ textAlign: 'center', padding: '2rem' }}>
                                 <p style={{ color: '#6b7280' }}>No income sources yet</p>
-                                <button onClick={openAddModal} style={{ marginTop: '0.5rem', color: '#14b8a6', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>
+                                <button onClick={openAddModal} style={{ marginTop: '0.5rem', color: '#76B89F', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>
                                     + Add your first income source
                                 </button>
                             </div>
@@ -355,7 +355,7 @@ export default function IncomePage() {
                             </h3>
                             <button
                                 onClick={() => setEfEditing(!efEditing)}
-                                style={{ fontSize: '0.75rem', color: '#14b8a6', background: 'none', border: 'none', cursor: 'pointer' }}
+                                style={{ fontSize: '0.75rem', color: '#76B89F', background: 'none', border: 'none', cursor: 'pointer' }}
                             >
                                 {efEditing ? 'Cancel' : 'Edit'}
                             </button>
@@ -442,12 +442,12 @@ export default function IncomePage() {
                                     <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#16a34a' }}>${financialHealth.loanRepaymentProjection.projectedSavings.toFixed(0)}</p>
                                     <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Projected Savings</p>
                                 </div>
-                                <div style={{ textAlign: 'center', padding: '1rem', backgroundColor: '#ccfbf1', borderRadius: '0.75rem' }}>
-                                    <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f766e' }}>{financialHealth.loanRepaymentProjection.percentPayable.toFixed(0)}%</p>
+                                <div style={{ textAlign: 'center', padding: '1rem', backgroundColor: '#E8F3EF', borderRadius: '0.75rem' }}>
+                                    <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#2d5a44' }}>{financialHealth.loanRepaymentProjection.percentPayable.toFixed(0)}%</p>
                                     <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Payable This Semester</p>
                                 </div>
                             </div>
-                            <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.75rem', borderLeft: '4px solid #14b8a6' }}>
+                            <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.75rem', borderLeft: '4px solid #76B89F' }}>
                                 <p style={{ color: '#374151', lineHeight: 1.6 }}>{financialHealth.loanRepaymentProjection.message}</p>
                             </div>
                         </div>
@@ -457,7 +457,7 @@ export default function IncomePage() {
                     <div style={{ ...cardStyle, gridColumn: 'span 2' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: '#10b981', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1rem' }}>💼</span>
+                                <span style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: '#76B89F', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1rem' }}>💼</span>
                                 Job Opportunities
                             </h3>
                             <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Mock data for demo</span>
@@ -486,11 +486,11 @@ export default function IncomePage() {
                                         setFormNotes('Campus library job, ~8 hrs/week at $15/hr');
                                         setShowAddModal(true);
                                     }}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#10b981', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                 >
                                     + Add This Job
                                 </button>
-                                <p style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '0.5rem', textAlign: 'center' }}>
+                                <p style={{ fontSize: '0.7rem', color: '#76B89F', marginTop: '0.5rem', textAlign: 'center' }}>
                                     Impact: +$120/wk → Stabilize weekly balance
                                 </p>
                             </div>
@@ -518,11 +518,11 @@ export default function IncomePage() {
                                         setFormNotes('~4 games/month, 4 hrs each at $17/hr');
                                         setShowAddModal(true);
                                     }}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#10b981', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                 >
                                     + Add This Job
                                 </button>
-                                <p style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '0.5rem', textAlign: 'center' }}>
+                                <p style={{ fontSize: '0.7rem', color: '#76B89F', marginTop: '0.5rem', textAlign: 'center' }}>
                                     Impact: +$68/wk → Great for weekend income
                                 </p>
                             </div>
@@ -550,11 +550,11 @@ export default function IncomePage() {
                                         setFormNotes('Tabling and event gigs, ~5 hrs/week at $16/hr');
                                         setShowAddModal(true);
                                     }}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#10b981', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                 >
                                     + Add This Job
                                 </button>
-                                <p style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '0.5rem', textAlign: 'center' }}>
+                                <p style={{ fontSize: '0.7rem', color: '#76B89F', marginTop: '0.5rem', textAlign: 'center' }}>
                                     Impact: +$80/wk → Free energy drinks included!
                                 </p>
                             </div>
@@ -582,11 +582,11 @@ export default function IncomePage() {
                                         setFormNotes('Lab research position, ~10 hrs/week at $18/hr');
                                         setShowAddModal(true);
                                     }}
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#10b981', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
                                 >
                                     + Add This Job
                                 </button>
-                                <p style={{ fontSize: '0.7rem', color: '#10b981', marginTop: '0.5rem', textAlign: 'center' }}>
+                                <p style={{ fontSize: '0.7rem', color: '#76B89F', marginTop: '0.5rem', textAlign: 'center' }}>
                                     Impact: +$180/wk → Build your career!
                                 </p>
                             </div>
@@ -686,7 +686,7 @@ export default function IncomePage() {
                                 </button>
                                 <button
                                     type="submit"
-                                    style={{ flex: 1, padding: '0.75rem', borderRadius: '0.5rem', background: '#14b8a6', color: 'white', fontWeight: 600, border: 'none', cursor: 'pointer' }}
+                                    style={{ flex: 1, padding: '0.75rem', borderRadius: '0.5rem', background: '#76B89F', color: 'white', fontWeight: 600, border: 'none', cursor: 'pointer' }}
                                 >
                                     {editingSource ? 'Update' : 'Add'}
                                 </button>

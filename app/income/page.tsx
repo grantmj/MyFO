@@ -592,6 +592,146 @@ export default function IncomePage() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Events Section */}
+                    <div style={{ ...cardStyle, gridColumn: 'span 2' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ width: '32px', height: '32px', borderRadius: '0.5rem', background: '#ef4444', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1rem' }}>🎉</span>
+                                2026 Events
+                            </h3>
+                            <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Mock data for demo</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                            {/* Formula 1 Austin */}
+                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                                <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <p style={{ fontWeight: 600, color: '#111827' }}>🏎️ Formula 1 Austin 2026</p>
+                                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Circuit of the Americas</p>
+                                    </div>
+                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fee2e2', color: '#991b1b', borderRadius: '9999px' }}>Racing</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                    <span style={{ fontWeight: 600, color: '#dc2626' }}>$250</span>
+                                    <span>Oct 23-25, 2026</span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setFormType('other');
+                                        setFormName('Formula 1 Austin 2026');
+                                        setFormAmount('-250');
+                                        setFormFrequency('one_time');
+                                        setFormIsLoan(false);
+                                        setFormNotes('F1 race weekend ticket - one-time event');
+                                        setShowAddModal(true);
+                                    }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#ef4444', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                >
+                                    + Add This Event
+                                </button>
+                                <p style={{ fontSize: '0.7rem', color: '#dc2626', marginTop: '0.5rem', textAlign: 'center' }}>
+                                    Impact: -$250 one-time expense
+                                </p>
+                            </div>
+
+                            {/* Decadence 2026 */}
+                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                                <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <p style={{ fontWeight: 600, color: '#111827' }}>🎶 Decadence 2026</p>
+                                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Phoenix Convention Center</p>
+                                    </div>
+                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fce7f3', color: '#831843', borderRadius: '9999px' }}>Rave</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                    <span style={{ fontWeight: 600, color: '#dc2626' }}>$200</span>
+                                    <span>Dec 30-31, 2026</span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setFormType('other');
+                                        setFormName('Decadence 2026');
+                                        setFormAmount('-200');
+                                        setFormFrequency('one_time');
+                                        setFormIsLoan(false);
+                                        setFormNotes('NYE rave ticket - one-time event');
+                                        setShowAddModal(true);
+                                    }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#ef4444', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                >
+                                    + Add This Event
+                                </button>
+                                <p style={{ fontSize: '0.7rem', color: '#dc2626', marginTop: '0.5rem', textAlign: 'center' }}>
+                                    Impact: -$200 one-time expense
+                                </p>
+                            </div>
+
+                            {/* Snowbowl Trip */}
+                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                                <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <p style={{ fontWeight: 600, color: '#111827' }}>⛷️ Snowbowl Trip</p>
+                                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Flagstaff, Arizona</p>
+                                    </div>
+                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#dbeafe', color: '#1e3a8a', borderRadius: '9999px' }}>Ski Trip</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                    <span style={{ fontWeight: 600, color: '#dc2626' }}>$200</span>
+                                    <span>Feb 14-15, 2026</span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setFormType('other');
+                                        setFormName('Snowbowl Trip');
+                                        setFormAmount('-200');
+                                        setFormFrequency('one_time');
+                                        setFormIsLoan(false);
+                                        setFormNotes('Ski trip with friends - one-time event');
+                                        setShowAddModal(true);
+                                    }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#ef4444', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                >
+                                    + Add This Event
+                                </button>
+                                <p style={{ fontSize: '0.7rem', color: '#dc2626', marginTop: '0.5rem', textAlign: 'center' }}>
+                                    Impact: -$200 one-time expense
+                                </p>
+                            </div>
+
+                            {/* Arizona State Fair */}
+                            <div style={{ padding: '1rem', borderRadius: '0.75rem', border: '1px solid #e5e7eb', background: '#fafafa' }}>
+                                <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                    <div>
+                                        <p style={{ fontWeight: 600, color: '#111827' }}>🎡 Arizona State Fair</p>
+                                        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>Phoenix, AZ</p>
+                                    </div>
+                                    <span style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', background: '#fef3c7', color: '#78350f', borderRadius: '9999px' }}>Fair</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: '0.75rem' }}>
+                                    <span style={{ fontWeight: 600, color: '#dc2626' }}>$50</span>
+                                    <span>Oct 10, 2026</span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setFormType('other');
+                                        setFormName('Arizona State Fair');
+                                        setFormAmount('-50');
+                                        setFormFrequency('one_time');
+                                        setFormIsLoan(false);
+                                        setFormNotes('State fair visit - one-time event');
+                                        setShowAddModal(true);
+                                    }}
+                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#ef4444', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                >
+                                    + Add This Event
+                                </button>
+                                <p style={{ fontSize: '0.7rem', color: '#dc2626', marginTop: '0.5rem', textAlign: 'center' }}>
+                                    Impact: -$50 one-time expense
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

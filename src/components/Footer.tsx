@@ -12,12 +12,6 @@ export default function Footer() {
           </p>
           <div className="flex gap-8">
             <Link
-              href="/#how-it-works"
-              className="text-sm text-gray-600 transition-colors hover:text-gray-900"
-            >
-              About
-            </Link>
-            <Link
               href="/dashboard"
               className="text-sm text-gray-600 transition-colors hover:text-gray-900"
             >

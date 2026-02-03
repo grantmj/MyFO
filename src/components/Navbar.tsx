@@ -15,12 +15,6 @@ export default function Navbar() {
           </Link>
           <div className="flex items-center gap-6">
             <Link
-              href="/#how-it-works"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              About
-            </Link>
-            <Link
               href="/dashboard"
               className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
             >

@@ -46,17 +46,10 @@ export default function Home() {
                   <p className="mt-6 text-lg md:text-xl text-gray-900 leading-relaxed drop-shadow-sm">
                     AI-powered semester budgeting that answers "can I afford this?" with smart tradeoff analysis and personalized coaching for college students.
                   </p>
-                  <div className="mt-8 flex flex-wrap gap-4 items-center">
+                  <div className="mt-8">
                     <Button variant="primary" href="/onboarding">
                       Get started
                     </Button>
-                    <a 
-                      href="#how-it-works" 
-                      className="text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors inline-flex items-center gap-1 drop-shadow-sm"
-                    >
-                      Learn more
-                      <span className="text-xs">→</span>
-                    </a>
                   </div>
                 </div>
 
@@ -147,58 +140,6 @@ export default function Home() {
                 suggestions for side gigs and scholarships you should apply to.
               </p>
             </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section id="how-it-works" className="border-t border-gray-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 md:py-32">
-          <div className="max-w-2xl">
-            <h2 className="text-3xl font-medium tracking-tight text-gray-900 md:text-4xl">
-              How it works
-            </h2>
-            <p className="mt-4 text-lg text-gray-600">
-              Simple setup, powerful insights.
-            </p>
-          </div>
-          <div className="mt-16 grid gap-12 sm:grid-cols-3">
-            <div>
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-accent/10 text-accent font-medium">
-                1
-              </div>
-              <h3 className="mt-6 text-lg font-medium text-gray-900">
-                Set up your semester
-              </h3>
-              <p className="mt-3 text-base text-gray-600 leading-relaxed">
-                Tell us about your financial aid, income, and planned expenses. 
-                Takes just a few minutes.
-              </p>
-            </div>
-            <div>
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-accent/10 text-accent font-medium">
-                2
-              </div>
-              <h3 className="mt-6 text-lg font-medium text-gray-900">
-                Track your spending
-              </h3>
-              <p className="mt-3 text-base text-gray-600 leading-relaxed">
-                Import transactions or log purchases manually. MyFO categorizes 
-                and tracks everything automatically.
-              </p>
-            </div>
-            <div>
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-accent/10 text-accent font-medium">
-                3
-              </div>
-              <h3 className="mt-6 text-lg font-medium text-gray-900">
-                Stay on track
-              </h3>
-              <p className="mt-3 text-base text-gray-600 leading-relaxed">
-                Ask questions, get alerts, and receive personalized financial 
-                coaching powered by AI.
-              </p>
-            </div>
           </div>
         </div>
       </section>

@@ -124,7 +124,7 @@ export default function Dashboard() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', border: '4px solid #e5e7eb', borderTopColor: '#14b8a6', animation: 'spin 1s linear infinite' }} />
+          <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', border: '4px solid #e5e7eb', borderTopColor: '#76B89F', animation: 'spin 1s linear infinite' }} />
           <p style={{ color: '#4b5563', fontWeight: 500 }}>Loading your finances...</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -139,12 +139,12 @@ export default function Dashboard() {
   const statusColor =
     snapshot.status === 'ahead' ? '#059669' :
       snapshot.status === 'behind' ? '#dc2626' :
-        '#14b8a6';
+        '#76B89F';
 
   const statusBg =
     snapshot.status === 'ahead' ? '#10b981' :
       snapshot.status === 'behind' ? '#ef4444' :
-        '#14b8a6';
+        '#76B89F';
 
   const statusText =
     snapshot.status === 'ahead' ? 'Ahead of Plan' :
@@ -163,8 +163,8 @@ export default function Dashboard() {
   };
 
   const simpleColors = [
-    '#14b8a6',
-    '#10b981',
+    '#76B89F',
+    '#5a8a78',
     '#f59e0b',
     '#ec4899',
     '#06b6d4',
@@ -184,12 +184,12 @@ export default function Dashboard() {
             style={{
               padding: '0.75rem 1.5rem',
               borderRadius: '0.75rem',
-              background: '#14b8a6',
+              background: '#76B89F',
               color: 'white',
               fontWeight: 600,
               border: 'none',
               cursor: 'pointer',
-              boxShadow: '0 4px 6px rgba(20, 184, 166, 0.25)'
+              boxShadow: '0 4px 6px rgba(118, 184, 159, 0.25)'
             }}
           >
             Load Demo Data
@@ -204,13 +204,13 @@ export default function Dashboard() {
             gap: '0.5rem',
             padding: '0.375rem 1rem',
             borderRadius: '9999px',
-            backgroundColor: '#ccfbf1',
-            color: '#0f766e',
+            backgroundColor: '#E8F3EF',
+            color: '#2d5a44',
             fontSize: '0.875rem',
             fontWeight: 500,
             marginBottom: '1rem'
           }}>
-            <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', backgroundColor: '#14b8a6', animation: 'pulse 2s infinite' }} />
+            <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', backgroundColor: '#76B89F', animation: 'pulse 2s infinite' }} />
             Safe to Spend This Week
           </div>
           <div style={{ fontSize: '3.75rem', fontWeight: 700, color: '#111827', marginBottom: '0.5rem' }}>
@@ -247,7 +247,7 @@ export default function Dashboard() {
                 width: '3rem',
                 height: '3rem',
                 borderRadius: '0.75rem',
-                background: '#14b8a6',
+                background: '#76B89F',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -334,7 +334,7 @@ export default function Dashboard() {
                   height: '2rem',
                   borderRadius: '0.5rem',
                   background: financialHealth.healthLevel === 'excellent' ? '#10b981' :
-                    financialHealth.healthLevel === 'good' ? '#14b8a6' :
+                    financialHealth.healthLevel === 'good' ? '#76B89F' :
                       financialHealth.healthLevel === 'fair' ? '#f59e0b' :
                         '#ef4444',
                   display: 'inline-flex',
@@ -348,7 +348,7 @@ export default function Dashboard() {
                 </span>
                 Financial Health
               </h3>
-              <a href="/income" style={{ fontSize: '0.875rem', color: '#14b8a6', fontWeight: 500, textDecoration: 'none' }}>
+              <a href="/income" style={{ fontSize: '0.875rem', color: '#76B89F', fontWeight: 500, textDecoration: 'none' }}>
                 Manage Income →
               </a>
             </div>
@@ -435,7 +435,7 @@ export default function Dashboard() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
                     <p style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.25rem' }}>Expected Spend</p>
-                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#14b8a6' }}>
+                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#76B89F' }}>
                       <AnimatedNumber value={snapshot.expectedSpendToDate} prefix="$" decimals={0} />
                     </p>
                   </div>
@@ -519,7 +519,7 @@ export default function Dashboard() {
                         width: '2.5rem',
                         height: '2.5rem',
                         borderRadius: '0.5rem',
-                        background: '#14b8a6',
+                        background: '#76B89F',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -536,7 +536,7 @@ export default function Dashboard() {
                         </p>
                       </div>
                     </div>
-                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#14b8a6' }}>
+                    <p style={{ fontSize: '1.125rem', fontWeight: 700, color: '#76B89F' }}>
                       ${item.amount.toFixed(0)}
                     </p>
                   </div>
@@ -561,8 +561,17 @@ export default function Dashboard() {
               <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827' }}>
                 FAFSA Readiness
               </h3>
-              <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '9999px', backgroundColor: '#ccfbf1', color: '#0f766e', fontWeight: 500 }}>
-                {fafsaChecklist ? Object.values(fafsaChecklist).filter(Boolean).length : 0}/8 Complete
+              <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '9999px', backgroundColor: '#E8F3EF', color: '#2d5a44', fontWeight: 500 }}>
+                {fafsaChecklist ? [
+                  fafsaChecklist.createFsaId,
+                  fafsaChecklist.gatherTaxDocs,
+                  fafsaChecklist.listSchools,
+                  fafsaChecklist.submitFafsa,
+                  fafsaChecklist.verification,
+                  fafsaChecklist.reviewAward,
+                  fafsaChecklist.acceptAid,
+                  fafsaChecklist.markCalendar,
+                ].filter(Boolean).length : 0}/8 Complete
               </span>
             </div>
             {fafsaChecklist && (
@@ -632,7 +641,7 @@ export default function Dashboard() {
                 href="https://studentaid.gov/h/apply-for-aid/fafsa"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#14b8a6', fontWeight: 500, textDecoration: 'none' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#76B89F', fontWeight: 500, textDecoration: 'none' }}
               >
                 Learn more about FAFSA
                 <svg style={{ width: '1rem', height: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -653,11 +662,11 @@ export default function Dashboard() {
               gap: '0.5rem',
               padding: '0.75rem 1.5rem',
               borderRadius: '0.75rem',
-              background: '#14b8a6',
+              background: '#76B89F',
               color: 'white',
               fontWeight: 600,
               textDecoration: 'none',
-              boxShadow: '0 4px 6px rgba(20, 184, 166, 0.25)'
+              boxShadow: '0 4px 6px rgba(118, 184, 159, 0.25)'
             }}
           >
             <svg style={{ width: '1.25rem', height: '1.25rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">

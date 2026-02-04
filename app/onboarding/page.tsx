@@ -93,8 +93,15 @@ export default function OnboardingPage() {
     setMessages(prev => [...prev, { text, isBot: false }]);
   }
 
-  function askNextQuestion(step: QuestionStep) {
+  // Pass values directly to avoid React state timing issues
+  function askNextQuestion(step: QuestionStep, values?: { disbursement?: number; loans?: number; jobIncome?: number; parentalSupport?: number }) {
     setIsTyping(true);
+    
+    // Use passed values or fall back to state
+    const currentDisbursement = values?.disbursement ?? disbursement;
+    const currentLoans = values?.loans ?? loans;
+    const currentJobIncome = values?.jobIncome ?? jobIncome;
+    const currentParentalSupport = values?.parentalSupport ?? parentalSupport;
     
     setTimeout(() => {
       setIsTyping(false);
@@ -106,11 +113,11 @@ export default function OnboardingPage() {
           break;
         case 'disbursement':
           addBotMessage("How much of that disbursement is from student loans?", true);
-         setCurrentStep('loans');
+          setCurrentStep('loans');
           break;
         case 'loans':
-          const grants = disbursement - loans;
-          addBotMessage(`Great! So you have $${grants.toFixed(2)} in grants/scholarships and $${loans.toFixed(2)} in loans. 💰`, true);
+          const grants = currentDisbursement - currentLoans;
+          addBotMessage(`Great! So you have $${grants.toFixed(2)} in grants/scholarships and $${currentLoans.toFixed(2)} in loans. 💰`, true);
           setCurrentStep('confirmation');
           setTimeout(() => askNextQuestion('confirmation'), 2000);
           break;
@@ -128,7 +135,7 @@ export default function OnboardingPage() {
           }
           break;
         case 'jobIncome':
-          addBotMessage(`Perfect! $${jobIncome.toFixed(2)}/week is solid income. 💪`, true);
+          addBotMessage(`Perfect! $${currentJobIncome.toFixed(2)}/week is solid income. 💪`, true);
           setCurrentStep('currentSavings');
           setTimeout(() => askNextQuestion('currentSavings'), 1500);
           break;
@@ -146,7 +153,7 @@ export default function OnboardingPage() {
           }
           break;
         case 'parentalSupport':
-          addBotMessage(`Nice! $${parentalSupport.toFixed(2)}/week from family helps a lot. 👨‍👩‍👧‍👦`, true);
+          addBotMessage(`Nice! $${currentParentalSupport.toFixed(2)}/week from family helps a lot. 👨‍👩‍👧‍👦`, true);
           setCurrentStep('weeklyBudget');
           setTimeout(() => askNextQuestion('weeklyBudget'), 1500);
           break;
@@ -197,15 +204,17 @@ export default function OnboardingPage() {
     switch(currentStep) {
       case 'disbursement':
         setDisbursement(numValue);
-        askNextQuestion('disbursement');
+        // Pass the value directly to avoid state timing issues
+        askNextQuestion('disbursement', { disbursement: numValue });
         break;
       case 'loans':
         setLoans(numValue);
-        askNextQuestion('loans');
+        // Pass both disbursement and loans to get correct calculation
+        askNextQuestion('loans', { disbursement, loans: numValue });
         break;
       case 'jobIncome':
         setJobIncome(numValue);
-        askNextQuestion('jobIncome');
+        askNextQuestion('jobIncome', { jobIncome: numValue });
         break;
       case 'currentSavings':
         setCurrentSavings(numValue);
@@ -221,7 +230,7 @@ export default function OnboardingPage() {
         break;
       case 'parentalSupport':
         setParentalSupport(numValue);
-        askNextQuestion('parentalSupport');
+        askNextQuestion('parentalSupport', { parentalSupport: numValue });
         break;
       case 'weeklyBudget':
         setWeeklyBudget(numValue);

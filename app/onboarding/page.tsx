@@ -28,18 +28,6 @@ type QuestionStep =
   | 'summary'
   | 'done';
 
-// Store collected data outside component to persist across renders
-interface CollectedData {
-  disbursement: number;
-  loans: number;
-  hasJob: boolean | null;
-  jobIncome: number;
-  currentSavings: number;
-  hasParentalSupport: boolean | null;
-  parentalSupport: number;
-  weeklyBudget: number;
-}
-
 export default function OnboardingPage() {
   const router = useRouter();
   const { showToast } = useToast();
@@ -51,17 +39,15 @@ export default function OnboardingPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // Use ref to store collected data - refs update synchronously unlike state
-  const dataRef = useRef<CollectedData>({
-    disbursement: 0,
-    loans: 0,
-    hasJob: null,
-    jobIncome: 0,
-    currentSavings: 0,
-    hasParentalSupport: null,
-    parentalSupport: 0,
-    weeklyBudget: 0,
-  });
+  // User data
+  const [disbursement, setDisbursement] = useState(0);
+  const [loans, setLoans] = useState(0);
+  const [hasJob, setHasJob] = useState<boolean | null>(null);
+  const [jobIncome, setJobIncome] = useState(0);
+  const [currentSavings, setCurrentSavings] = useState(0);
+  const [hasParentalSupport, setHasParentalSupport] = useState<boolean | null>(null);
+  const [parentalSupport, setParentalSupport] = useState(0);
+  const [weeklyBudget, setWeeklyBudget] = useState(0);
 
   useEffect(() => {
     fetchUser();
@@ -97,6 +83,8 @@ export default function OnboardingPage() {
     }
   }
 
+
+
   function addBotMessage(text: string, typing: boolean = false) {
     setMessages(prev => [...prev, { text, isBot: true, showTyping: typing }]);
   }
@@ -108,9 +96,6 @@ export default function OnboardingPage() {
   function askNextQuestion(step: QuestionStep) {
     setIsTyping(true);
     
-    // Read from ref for immediate access to updated values
-    const data = dataRef.current;
-    
     setTimeout(() => {
       setIsTyping(false);
       
@@ -121,11 +106,11 @@ export default function OnboardingPage() {
           break;
         case 'disbursement':
           addBotMessage("How much of that disbursement is from student loans?", true);
-          setCurrentStep('loans');
+         setCurrentStep('loans');
           break;
         case 'loans':
-          const grants = data.disbursement - data.loans;
-          addBotMessage(`Great! So you have $${grants.toFixed(2)} in grants/scholarships and $${data.loans.toFixed(2)} in loans. 💰`, true);
+          const grants = disbursement - loans;
+          addBotMessage(`Great! So you have $${grants.toFixed(2)} in grants/scholarships and $${loans.toFixed(2)} in loans. 💰`, true);
           setCurrentStep('confirmation');
           setTimeout(() => askNextQuestion('confirmation'), 2000);
           break;
@@ -134,7 +119,7 @@ export default function OnboardingPage() {
           setCurrentStep('hasJob');
           break;
         case 'hasJob':
-          if (data.hasJob) {
+          if (hasJob) {
             addBotMessage("How much do you earn per week from your job?", true);
             setCurrentStep('jobIncome');
           } else {
@@ -143,7 +128,7 @@ export default function OnboardingPage() {
           }
           break;
         case 'jobIncome':
-          addBotMessage(`Perfect! $${data.jobIncome.toFixed(2)}/week is solid income. 💪`, true);
+          addBotMessage(`Perfect! $${jobIncome.toFixed(2)}/week is solid income. 💪`, true);
           setCurrentStep('currentSavings');
           setTimeout(() => askNextQuestion('currentSavings'), 1500);
           break;
@@ -152,7 +137,7 @@ export default function OnboardingPage() {
           setCurrentStep('currentSavings');
           break;
         case 'hasParentalSupport':
-          if (data.hasParentalSupport) {
+          if (hasParentalSupport) {
             addBotMessage("How much do your parents contribute per week?", true);
             setCurrentStep('parentalSupport');
           } else {
@@ -161,7 +146,7 @@ export default function OnboardingPage() {
           }
           break;
         case 'parentalSupport':
-          addBotMessage(`Nice! $${data.parentalSupport.toFixed(2)}/week from family helps a lot. 👨‍👩‍👧‍👦`, true);
+          addBotMessage(`Nice! $${parentalSupport.toFixed(2)}/week from family helps a lot. 👨‍👩‍👧‍👦`, true);
           setCurrentStep('weeklyBudget');
           setTimeout(() => askNextQuestion('weeklyBudget'), 1500);
           break;
@@ -190,11 +175,10 @@ export default function OnboardingPage() {
       addUserMessage(answer ? 'Yes' : 'No');
       
       if (currentStep === 'hasJob') {
-        // Update ref immediately (synchronous)
-        dataRef.current.hasJob = answer;
+        setHasJob(answer);
         askNextQuestion('hasJob');
       } else if (currentStep === 'hasParentalSupport') {
-        dataRef.current.hasParentalSupport = answer;
+        setHasParentalSupport(answer);
         askNextQuestion('hasParentalSupport');
       }
       return;
@@ -212,20 +196,19 @@ export default function OnboardingPage() {
 
     switch(currentStep) {
       case 'disbursement':
-        // Update ref immediately (synchronous) - value is available right away
-        dataRef.current.disbursement = numValue;
+        setDisbursement(numValue);
         askNextQuestion('disbursement');
         break;
       case 'loans':
-        dataRef.current.loans = numValue;
+        setLoans(numValue);
         askNextQuestion('loans');
         break;
       case 'jobIncome':
-        dataRef.current.jobIncome = numValue;
+        setJobIncome(numValue);
         askNextQuestion('jobIncome');
         break;
       case 'currentSavings':
-        dataRef.current.currentSavings = numValue;
+        setCurrentSavings(numValue);
         // After savings, ask about parental support
         setTimeout(() => {
           setIsTyping(true);
@@ -237,11 +220,11 @@ export default function OnboardingPage() {
         }, 1000);
         break;
       case 'parentalSupport':
-        dataRef.current.parentalSupport = numValue;
+        setParentalSupport(numValue);
         askNextQuestion('parentalSupport');
         break;
       case 'weeklyBudget':
-        dataRef.current.weeklyBudget = numValue;
+        setWeeklyBudget(numValue);
         setCurrentStep('summary');
         askNextQuestion('summary');
         break;
@@ -256,41 +239,30 @@ export default function OnboardingPage() {
 
     try {
       setLoading(true);
-      
-      // Read all values from ref - guaranteed to have the latest values
-      const data = dataRef.current;
-      
       const startDate = new Date();
       const endDate = addMonths(startDate, 4);
       const disbursementDate = new Date();
-      const grantsAmount = Math.max(0, data.disbursement - data.loans);
+      const grantsAmount = Math.max(0, disbursement - loans);
 
       // Calculate monthly income from all sources
-      const weeklyJobIncome = data.hasJob ? data.jobIncome : 0;
-      const weeklyParentalSupport = data.hasParentalSupport ? data.parentalSupport : 0;
+      const weeklyJobIncome = hasJob ? jobIncome : 0;
+      const weeklyParentalSupport = hasParentalSupport ? parentalSupport : 0;
       const totalMonthlyIncome = (weeklyJobIncome + weeklyParentalSupport) * 4.33; // avg weeks per month
 
-      console.log('Submitting plan data:', {
-        disbursement: data.disbursement,
-        loans: data.loans,
-        grants: grantsAmount,
-        savings: data.currentSavings,
-      });
-
-      const planData = {
+      const data = {
         startDate,
         endDate,
         disbursementDate,
-        startingBalance: data.currentSavings + data.disbursement, // Include current savings
+        startingBalance: currentSavings + disbursement, // Include current savings
         grants: grantsAmount,
-        loans: data.loans,
+        loans: loans,
         monthlyIncome: totalMonthlyIncome,
         fixedCosts: { rent: 0, utilities: 0, subscriptions: 0, transportation: 0 },
         variableBudgets: {
-          groceries: data.weeklyBudget * 0.4,
-          dining: data.weeklyBudget * 0.25,
-          entertainment: data.weeklyBudget * 0.2,
-          misc: data.weeklyBudget * 0.15,
+          groceries: weeklyBudget * 0.4,
+          dining: weeklyBudget * 0.25,
+          entertainment: weeklyBudget * 0.2,
+          misc: weeklyBudget * 0.15,
         },
         plannedItems: [],
       };
@@ -298,7 +270,7 @@ export default function OnboardingPage() {
       const res = await fetch('/api/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, data: planData }),
+        body: JSON.stringify({ userId, data }),
       });
 
       if (res.ok) {

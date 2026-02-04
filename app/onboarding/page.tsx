@@ -1,29 +1,65 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { addMonths } from "date-fns";
+import { ChatMessage } from "@/components/ui/ChatMessage";
+import { ChatInput } from "@/components/ui/ChatInput";
+import { TypingIndicator } from "@/components/ui/TypingIndicator";
 
-const STEPS = ['Your Funds', 'Weekly Budget'];
+interface Message {
+  text: string;
+  isBot: boolean;
+  showTyping?: boolean;
+}
+
+type QuestionStep = 
+  | 'welcome'
+  | 'disbursement'
+  | 'loans'
+  | 'confirmation'
+  | 'weeklyBudget'
+  | 'summary'
+  | 'done';
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const [currentStep, setCurrentStep] = useState(0);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  
   const [userId, setUserId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [currentStep, setCurrentStep] = useState<QuestionStep>('welcome');
+  const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Step 1: Your Funds
-  const [disbursement, setDisbursement] = useState('');
-  const [loans, setLoans] = useState('');
-
-  // Step 2: Weekly Budget
-  const [weeklyBudget, setWeeklyBudget] = useState('');
+  
+  // User data
+  const [disbursement, setDisbursement] = useState(0);
+  const [loans, setLoans] = useState(0);
+  const [weeklyBudget, setWeeklyBudget] = useState(0);
 
   useEffect(() => {
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    if (userId && messages.length === 0) {
+      // Start the conversation
+      addBotMessage("Hi! I'm MyFO, your financial assistant. Let's set up your semester budget together! 👋", true);
+      setTimeout(() => {
+        askNextQuestion('welcome');
+      }, 1500);
+    }
+  }, [userId]);
+
+  // Auto-scroll within chat messages container only
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, [messages, isTyping]);
+
 
   async function fetchUser() {
     try {
@@ -37,20 +73,75 @@ export default function OnboardingPage() {
     }
   }
 
-  function canProceed() {
-    if (currentStep === 0) {
-      return disbursement && loans;
-    }
-    if (currentStep === 1) {
-      return weeklyBudget;
-    }
-    return true;
+
+
+  function addBotMessage(text: string, typing: boolean = false) {
+    setMessages(prev => [...prev, { text, isBot: true, showTyping: typing }]);
   }
 
-  const disbursementAmount = parseFloat(disbursement) || 0;
-  const loansAmount = parseFloat(loans) || 0;
-  const grantsAmount = Math.max(0, disbursementAmount - loansAmount);
-  const weeklyAmount = parseFloat(weeklyBudget) || 0;
+  function addUserMessage(text: string) {
+    setMessages(prev => [...prev, { text, isBot: false }]);
+  }
+
+  function askNextQuestion(step: QuestionStep) {
+    setIsTyping(true);
+    
+    setTimeout(() => {
+      setIsTyping(false);
+      
+      switch(step) {
+        case 'welcome':
+          addBotMessage("What's the total disbursement you received this semester (after tuition was paid)?", true);
+          setCurrentStep('disbursement');
+          break;
+        case 'disbursement':
+          addBotMessage("How much of that disbursement is from student loans?", true);
+          setCurrentStep('loans');
+          break;
+        case 'loans':
+          const grants = disbursement - loans;
+          addBotMessage(`Great! So you have $${grants.toFixed(2)} in grants/scholarships and $${loans.toFixed(2)} in loans. 💰`, true);
+          setCurrentStep('confirmation');
+          setTimeout(() => askNextQuestion('confirmation'), 2000);
+          break;
+        case 'confirmation':
+          addBotMessage("Now, what's your estimated weekly spending budget?", true);
+          setCurrentStep('weeklyBudget');
+          break;
+        case 'weeklyBudget':
+          addBotMessage(`Perfect! I've got everything I need. Let me set up your budget plan... 🚀`, true);
+          setCurrentStep('summary');
+          setTimeout(() => handleSubmit(), 2000);
+          break;
+      }
+    }, 800);
+  }
+
+  function handleUserInput(value: string) {
+    const numValue = parseFloat(value);
+    
+    if (isNaN(numValue) || numValue < 0) {
+      showToast('Please enter a valid amount', 'error');
+      return;
+    }
+
+    addUserMessage(`$${numValue.toFixed(2)}`);
+
+    switch(currentStep) {
+      case 'disbursement':
+        setDisbursement(numValue);
+        askNextQuestion('disbursement');
+        break;
+      case 'loans':
+        setLoans(numValue);
+        askNextQuestion('loans');
+        break;
+      case 'weeklyBudget':
+        setWeeklyBudget(numValue);
+        askNextQuestion('weeklyBudget');
+        break;
+    }
+  }
 
   async function handleSubmit() {
     if (!userId) {
@@ -63,21 +154,22 @@ export default function OnboardingPage() {
       const startDate = new Date();
       const endDate = addMonths(startDate, 4);
       const disbursementDate = new Date();
+      const grantsAmount = Math.max(0, disbursement - loans);
 
       const data = {
         startDate,
         endDate,
         disbursementDate,
-        startingBalance: disbursementAmount,
+        startingBalance: disbursement,
         grants: grantsAmount,
-        loans: loansAmount,
+        loans: loans,
         monthlyIncome: 0,
         fixedCosts: { rent: 0, utilities: 0, subscriptions: 0, transportation: 0 },
         variableBudgets: {
-          groceries: weeklyAmount * 0.4,
-          dining: weeklyAmount * 0.25,
-          entertainment: weeklyAmount * 0.2,
-          misc: weeklyAmount * 0.15,
+          groceries: weeklyBudget * 0.4,
+          dining: weeklyBudget * 0.25,
+          entertainment: weeklyBudget * 0.2,
+          misc: weeklyBudget * 0.15,
         },
         plannedItems: [],
       };
@@ -89,8 +181,11 @@ export default function OnboardingPage() {
       });
 
       if (res.ok) {
-        showToast('Plan created!', 'success');
-        router.push('/dashboard');
+        addBotMessage("All set! Welcome to MyFO! 🎉", true);
+        setTimeout(() => {
+          showToast('Plan created!', 'success');
+          router.push('/dashboard');
+        }, 1500);
       } else {
         showToast('Failed to create plan', 'error');
       }
@@ -102,320 +197,94 @@ export default function OnboardingPage() {
     }
   }
 
-  // Demo: pre-fill with sample data
-  async function handleConnectDemo() {
-    setLoading(true);
-    // Pre-fill demo data
-    setDisbursement('5000');
-    setLoans('2000');
-    setWeeklyBudget('200');
-
-    if (!userId) {
-      showToast('Please log in first', 'error');
-      setLoading(false);
-      return;
-    }
-
-    const startDate = new Date();
-    const endDate = addMonths(startDate, 4);
-
-    const data = {
-      startDate,
-      endDate,
-      disbursementDate: startDate,
-      startingBalance: 5000,
-      grants: 3000,
-      loans: 2000,
-      monthlyIncome: 500,
-      fixedCosts: { rent: 0, utilities: 0, subscriptions: 15, transportation: 50 },
-      variableBudgets: { groceries: 80, dining: 50, entertainment: 40, misc: 30 },
-      plannedItems: [],
-    };
-
-    try {
-      const res = await fetch('/api/plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, data }),
-      });
-
-      // Also seed some demo transactions
-      await fetch('/api/seed-demo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-      });
-
-      if (res.ok) {
-        showToast('Demo data loaded!', 'success');
-        router.push('/dashboard');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const canInput = ['disbursement', 'loans', 'weeklyBudget'].includes(currentStep);
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #ecfdf5 0%, #ffffff 50%, #f0fdf4 100%)',
-      padding: '2rem 1rem'
-    }}>
-      <div style={{ maxWidth: '28rem', margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <h1 style={{
-            fontSize: '2rem',
-            fontWeight: 700,
-            color: '#059669',
-            marginBottom: '0.5rem'
-          }}>
-            Welcome to MyFo
-          </h1>
-          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-            Quick setup – just {STEPS.length} steps
-          </p>
-        </div>
-
-        {/* Disclaimer Banner */}
-        <div style={{
-          padding: '0.875rem 1rem',
-          background: '#fef9c3',
-          border: '1px solid #fde047',
-          borderRadius: '0.75rem',
-          marginBottom: '1.5rem'
+    <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={{
+        padding: '2rem 1rem',
+        textAlign: 'center',
+        borderBottom: '1px solid #e5e7eb',
+        background: 'white',
+      }}>
+        <h1 style={{
+          fontSize: '2.25rem',
+          fontWeight: 700,
+          color: '#111827',
+          marginBottom: '0.5rem',
+          margin: 0,
         }}>
-          <p style={{ fontSize: '0.8rem', color: '#854d0e', margin: 0 }}>
-            📋 <strong>High-level setup:</strong> We'll refine your budget once you import transactions or statements.
-          </p>
-        </div>
+          Welcome to MyFO
+        </h1>
+        <p style={{ color: '#6b7280', fontSize: '1rem', marginTop: '0.5rem' }}>
+          Let's set up your semester budget together
+        </p>
+      </div>
 
-        {/* Connect MyASU Demo Button */}
-        <button
-          onClick={handleConnectDemo}
-          disabled={loading}
-          style={{
-            width: '100%',
-            padding: '0.875rem',
-            borderRadius: '0.75rem',
-            border: '2px dashed #10b981',
-            background: '#f0fdf4',
-            color: '#059669',
-            fontWeight: 600,
-            cursor: loading ? 'default' : 'pointer',
-            marginBottom: '1.5rem',
-            fontSize: '0.875rem'
-          }}
-        >
-          🎓 Connect MyASU (demo) — Load sample data
-        </button>
-
-        <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: '0.75rem', marginBottom: '1rem' }}>
-          — or enter manually —
-        </div>
-
-        {/* Stepper */}
+      {/* Main Chat Container */}
+      <div style={{
+        flex: 1,
+        maxWidth: '56rem',
+        width: '100%',
+        margin: '0 auto',
+        padding: '2rem 1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0, // Important for flex children to respect overflow
+      }}>
+        {/* Chat Card */}
         <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '0.5rem',
-          marginBottom: '1.5rem'
-        }}>
-          {STEPS.map((step, index) => (
-            <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{
-                width: '2rem',
-                height: '2rem',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 600,
-                fontSize: '0.75rem',
-                background: index <= currentStep ? '#10b981' : '#e5e7eb',
-                color: index <= currentStep ? 'white' : '#9ca3af',
-              }}>
-                {index < currentStep ? '✓' : index + 1}
-              </div>
-              {index < STEPS.length - 1 && (
-                <div style={{
-                  width: '2.5rem',
-                  height: '2px',
-                  background: index < currentStep ? '#10b981' : '#e5e7eb',
-                }} />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Card */}
-        <div style={{
-          background: 'white',
+          backgroundColor: 'white',
           borderRadius: '1rem',
-          padding: '1.5rem',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-          border: '1px solid #e5e7eb'
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          border: '1px solid #f3f4f6',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '600px',
+          maxHeight: '70vh',
         }}>
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>
-            {STEPS[currentStep]}
-          </h2>
-
-          {/* Step 1: Your Funds */}
-          {currentStep === 0 && (
-            <div>
-              <p style={{ color: '#6b7280', marginBottom: '1.25rem', fontSize: '0.8rem' }}>
-                This is what hits your bank account from financial aid at the start of the semester.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-                    Total Disbursement (after tuition)
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', fontWeight: 600 }}>$</span>
-                    <input
-                      type="number"
-                      value={disbursement}
-                      onChange={(e) => setDisbursement(e.target.value)}
-                      placeholder="5000"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem 0.75rem 0.75rem 1.75rem',
-                        borderRadius: '0.5rem',
-                        border: '1px solid #d1d5db',
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-                    How much in loans are you taking out this semester?
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', fontWeight: 600 }}>$</span>
-                    <input
-                      type="number"
-                      value={loans}
-                      onChange={(e) => setLoans(e.target.value)}
-                      placeholder="2000"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem 0.75rem 0.75rem 1.75rem',
-                        borderRadius: '0.5rem',
-                        border: '1px solid #d1d5db',
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Weekly Budget + Submit */}
-          {currentStep === 1 && (
-            <div>
-              <p style={{ color: '#6b7280', marginBottom: '1.25rem', fontSize: '0.8rem' }}>
-                Estimate your weekly spending. We'll refine this once you import transactions.
-              </p>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#374151', marginBottom: '0.375rem' }}>
-                  Weekly Budget Estimate
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', fontWeight: 600 }}>$</span>
-                  <input
-                    type="number"
-                    value={weeklyBudget}
-                    onChange={(e) => setWeeklyBudget(e.target.value)}
-                    placeholder="200"
-                    style={{
-                      width: '100%',
-                      padding: '0.875rem 0.875rem 0.875rem 1.75rem',
-                      borderRadius: '0.5rem',
-                      border: '2px solid #10b981',
-                      fontSize: '1.25rem',
-                      fontWeight: 700,
-                      textAlign: 'center',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation */}
-          <div style={{
+          {/* Messages Area */}
+          <div
+            ref={messagesContainerRef}
+            style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '1.5rem',
             display: 'flex',
-            justifyContent: 'space-between',
-            marginTop: '1.5rem',
-            paddingTop: '1rem',
-            borderTop: '1px solid #f3f4f6'
+            flexDirection: 'column',
+            gap: '1rem',
           }}>
-            <button
-              onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-              disabled={currentStep === 0}
-              style={{
-                padding: '0.625rem 1.25rem',
-                borderRadius: '0.5rem',
-                border: 'none',
-                background: 'transparent',
-                color: currentStep === 0 ? '#d1d5db' : '#6b7280',
-                fontWeight: 500,
-                cursor: currentStep === 0 ? 'default' : 'pointer',
-                fontSize: '0.875rem'
-              }}
-            >
-              ← Back
-            </button>
+            {messages.map((msg, idx) => (
+              <ChatMessage
+                key={idx}
+                message={msg.text}
+                isBot={msg.isBot}
+                showTyping={msg.showTyping}
+              />
+            ))}
+            
+            {isTyping && <TypingIndicator />}
+          </div>
 
-            {currentStep < STEPS.length - 1 ? (
-              <button
-                onClick={() => setCurrentStep(currentStep + 1)}
-                disabled={!canProceed()}
-                style={{
-                  padding: '0.625rem 1.5rem',
-                  borderRadius: '0.5rem',
-                  border: 'none',
-                  background: canProceed() ? '#10b981' : '#e5e7eb',
-                  color: canProceed() ? 'white' : '#9ca3af',
-                  fontWeight: 600,
-                  cursor: canProceed() ? 'pointer' : 'default',
-                  fontSize: '0.875rem'
-                }}
-              >
-                Next →
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={loading || !canProceed()}
-                style={{
-                  padding: '0.625rem 1.5rem',
-                  borderRadius: '0.5rem',
-                  border: 'none',
-                  background: canProceed() ? '#10b981' : '#e5e7eb',
-                  color: 'white',
-                  fontWeight: 600,
-                  cursor: (loading || !canProceed()) ? 'default' : 'pointer',
-                  opacity: loading ? 0.7 : 1,
-                  fontSize: '0.875rem'
-                }}
-              >
-                {loading ? 'Creating...' : 'Start Using MyFo →'}
-              </button>
-            )}
+          {/* Input Area - Always visible */}
+          <div style={{
+            borderTop: '1px solid #e5e7eb',
+            padding: '1rem',
+            display: 'flex',
+            gap: '0.75rem',
+          }}>
+            <ChatInput
+              onSubmit={handleUserInput}
+              disabled={!canInput || isTyping || loading}
+              type="number"
+              placeholder={
+                currentStep === 'disbursement' ? 'e.g., 5000' :
+                currentStep === 'loans' ? 'e.g., 2000' :
+                currentStep === 'weeklyBudget' ? 'e.g., 200' :
+                'Processing...'
+              }
+            />
           </div>
         </div>
       </div>

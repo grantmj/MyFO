@@ -18,6 +18,7 @@ function AssistantContent() {
   const [loading, setLoading] = useState(false);
   const [configError, setConfigError] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     initializePage();
@@ -68,6 +69,13 @@ function AssistantContent() {
       showToast('Failed to initialize chat', 'error');
     }
   }
+
+  // Auto-scroll within chat messages container only
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, [messages, loading]);
 
   async function sendMessageWithContent(messageContent: string, userIdToUse: string) {
     if (!messageContent.trim() || !userIdToUse || loading) return;
@@ -188,133 +196,125 @@ function AssistantContent() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
+    <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', flexDirection: 'column' }}>
       <style>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(10px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                @keyframes fadeInUp {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                @keyframes scaleIn {
-                    from { opacity: 0; transform: scale(0.95); }
-                    to { opacity: 1; transform: scale(1); }
-                }
-                @keyframes pulse {
-                    0%, 100% { transform: scale(1); }
-                    50% { transform: scale(1.05); }
-                }
-                @keyframes slideInRight {
-                    from { opacity: 0; transform: translateX(10px); }
-                    to { opacity: 1; transform: translateX(0); }
-                }
-                @keyframes slideInLeft {
-                    from { opacity: 0; transform: translateX(-10px); }
-                    to { opacity: 1; transform: translateX(0); }
-                }
-                .page-container {
-                    animation: fadeIn 0.4s ease-out;
-                }
-                .header-section {
-                    animation: fadeInUp 0.5s ease-out;
-                }
-                .card-animate {
-                    animation: scaleIn 0.5s ease-out;
-                }
-                .btn-primary {
-                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-                    position: relative;
-                    overflow: hidden;
-                }
-                .btn-primary:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 16px rgba(118, 184, 159, 0.35);
-                }
-                .btn-primary:active {
-                    transform: translateY(0) scale(0.98);
-                }
-                .btn-secondary {
-                    transition: all 0.2s ease;
-                }
-                .btn-secondary:hover {
-                    transform: scale(1.05);
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                }
-                .btn-secondary:active {
-                    transform: scale(0.95);
-                }
-                .message-user {
-                    animation: slideInRight 0.3s ease-out;
-                }
-                .message-assistant {
-                    animation: slideInLeft 0.3s ease-out;
-                }
-                .quick-question-btn {
-                    transition: all 0.2s ease;
-                }
-                .quick-question-btn:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                }
-                .badge {
-                    transition: all 0.2s ease;
-                }
-                .badge:hover {
-                    transform: scale(1.1);
-                }
-            `}</style>
-      <div className="page-container" style={{ maxWidth: '56rem', margin: '0 auto', padding: '2rem 1rem' }}>
-        <div className="header-section" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(10px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInLeft {
+          from { opacity: 0; transform: translateX(-10px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .message-user {
+          animation: slideInRight 0.3s ease-out;
+        }
+        .message-assistant {
+          animation: slideInLeft 0.3s ease-out;
+        }
+      `}</style>
+
+      {/* Header */}
+      <div style={{
+        padding: '2rem 1rem',
+        borderBottom: '1px solid #e5e7eb',
+        background: 'white',
+      }}>
+        <div style={{ maxWidth: '56rem', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>
-              Ask MyFo
+              Ask MyFO
             </h1>
-            <p style={{ marginTop: '0.5rem', color: '#6b7280' }}>
-              Your personal financial copilot - ask me anything about your budget
+            <p style={{ marginTop: '0.5rem', color: '#6b7280', fontSize: '1rem' }}>
+              Your personal financial copilot
             </p>
           </div>
           <button
             onClick={clearChat}
-            className="btn-secondary"
             style={{
-              fontSize: '0.75rem',
-              padding: '0.375rem 0.75rem',
+              fontSize: '0.875rem',
+              padding: '0.5rem 1rem',
               color: '#6b7280',
               border: '1px solid #e5e7eb',
-              borderRadius: '0.375rem',
-              background: 'transparent',
-              cursor: 'pointer'
+              borderRadius: '0.5rem',
+              background: 'white',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f9fafb';
+              e.currentTarget.style.borderColor = '#76B89F';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'white';
+              e.currentTarget.style.borderColor = '#e5e7eb';
             }}
           >
             Clear Chat
           </button>
         </div>
+      </div>
 
+      {/* Main Container */}
+      <div style={{
+        flex: 1,
+        maxWidth: '56rem',
+        width: '100%',
+        margin: '0 auto',
+        padding: '2rem 1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+      }}>
         {configError && (
-          <div className="card-animate" style={{ ...cardStyle, backgroundColor: '#fefce8', border: '1px solid #fde047' }}>
+          <div style={{
+            backgroundColor: '#fefce8',
+            border: '1px solid #fde047',
+            borderRadius: '1rem',
+            padding: '1rem',
+            marginBottom: '1rem',
+          }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
               <span style={{ fontSize: '1.5rem' }}>⚠️</span>
               <div>
                 <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827', marginBottom: '0.25rem' }}>
                   OpenAI API Key Required
                 </h3>
-                <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                  To use the MyFo chat assistant, you need to add your OpenAI API key to the <code style={{ backgroundColor: '#fef3c7', padding: '0 0.25rem', borderRadius: '0.25rem' }}>.env</code> file:
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>
+                  To use the MyFO chat assistant, you need to add your OpenAI API key to the <code style={{ backgroundColor: '#fef3c7', padding: '0 0.25rem', borderRadius: '0.25rem' }}>.env</code> file.
                 </p>
-                <pre style={{ marginTop: '0.5rem', fontSize: '0.75rem', backgroundColor: '#fef3c7', padding: '0.5rem', borderRadius: '0.25rem', overflowX: 'auto' }}>
-                  OPENAI_API_KEY=sk-your-key-here
-                </pre>
               </div>
             </div>
           </div>
         )}
 
-        {/* Chat Container */}
-        <div className="card-animate" style={{ ...cardStyle, height: '500px', display: 'flex', flexDirection: 'column' }}>
-          {/* Messages */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* Chat Card */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '1rem',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          border: '1px solid #f3f4f6',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '500px',
+          maxHeight: '60vh',
+          marginBottom: '1rem',
+        }}>
+          {/* Messages Area */}
+          <div
+            ref={messagesContainerRef}
+            style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+          }}>
             {messages.map((message, index) => (
               <div
                 key={index}
@@ -323,29 +323,46 @@ function AssistantContent() {
               >
                 <div
                   style={{
-                    maxWidth: '80%',
-                    borderRadius: '0.75rem',
-                    padding: '0.75rem 1rem',
+                    maxWidth: '75%',
+                    borderRadius: message.role === 'assistant' ? '0.75rem 0.75rem 0.75rem 0.25rem' : '0.75rem 0.75rem 0.25rem 0.75rem',
+                    padding: '0.875rem 1rem',
                     backgroundColor: message.role === 'user' ? '#76B89F' : '#f3f4f6',
-                    color: message.role === 'user' ? 'white' : '#111827'
+                    color: message.role === 'user' ? '#ffffff' : '#111827',
+                    fontSize: '0.875rem',
+                    lineHeight: 1.5,
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
                   }}
                 >
-                  <p style={{ fontSize: '0.875rem', whiteSpace: 'pre-wrap', margin: 0 }}>{message.content}</p>
+                  <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{message.content}</p>
                 </div>
               </div>
             ))}
             {loading && (
               <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <div style={{ backgroundColor: '#f3f4f6', borderRadius: '0.75rem', padding: '0.75rem 1rem' }}>
-                  <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>Thinking...</p>
+                <div style={{
+                  backgroundColor: '#f3f4f6',
+                  borderRadius: '0.75rem 0.75rem 0.75rem 0.25rem',
+                  padding: '0.875rem 1rem',
+                  display: 'flex',
+                  gap: '0.375rem',
+                  alignItems: 'center',
+                }}>
+                  <div style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', background: '#6b7280', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: '0s' }} />
+                  <div style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', background: '#6b7280', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: '0.2s' }} />
+                  <div style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', background: '#6b7280', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: '0.4s' }} />
                 </div>
               </div>
             )}
           </div>
 
-          {/* Input */}
-          <div style={{ borderTop: '1px solid #e5e7eb', padding: '1rem' }}>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {/* Input Area */}
+          <div style={{
+            borderTop: '1px solid #e5e7eb',
+            padding: '1rem',
+            display: 'flex',
+            gap: '0.75rem',
+          }}>
+            <div style={{ position: 'relative', flex: 1 }}>
               <input
                 type="text"
                 value={input}
@@ -353,48 +370,56 @@ function AssistantContent() {
                 onKeyPress={handleKeyPress}
                 placeholder="Ask me anything about your budget..."
                 style={{
-                  flex: 1,
-                  padding: '0.5rem 0.75rem',
+                  width: '100%',
+                  padding: '0.875rem 1rem',
                   border: '1px solid #e5e7eb',
                   borderRadius: '0.5rem',
                   fontSize: '0.875rem',
                   color: '#111827',
                   backgroundColor: 'white',
-                  outline: 'none'
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.2s',
                 }}
+                onFocus={(e) => (e.target.style.borderColor = '#76B89F')}
+                onBlur={(e) => (e.target.style.borderColor = '#e5e7eb')}
                 disabled={loading}
               />
-              <button
-                onClick={sendMessage}
-                disabled={!input.trim() || loading}
-                className="btn-primary"
-                style={{
-                  padding: '0.5rem 1.5rem',
-                  borderRadius: '0.5rem',
-                  background: '#76B89F',
-                  color: 'white',
-                  fontWeight: 600,
-                  border: 'none',
-                  cursor: (!input.trim() || loading) ? 'not-allowed' : 'pointer',
-                  opacity: (!input.trim() || loading) ? 0.5 : 1,
-                  fontSize: '0.875rem'
-                }}
-              >
-                Send
-              </button>
             </div>
+            <button
+              onClick={sendMessage}
+              disabled={!input.trim() || loading}
+              style={{
+                padding: '0.875rem 1.5rem',
+                borderRadius: '0.5rem',
+                background: (!input.trim() || loading) ? '#e5e7eb' : '#76B89F',
+                color: 'white',
+                fontWeight: 600,
+                border: 'none',
+                cursor: (!input.trim() || loading) ? 'default' : 'pointer',
+                fontSize: '0.875rem',
+                transition: 'all 0.2s',
+              }}
+            >
+              Send
+            </button>
           </div>
         </div>
 
         {/* Quick Questions */}
-        <div className="card-animate" style={cardStyle}>
-          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem' }}>Quick Questions</h3>
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '1rem',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          border: '1px solid #f3f4f6',
+          padding: '1.5rem',
+        }}>
+          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827', marginBottom: '0.75rem', marginTop: 0 }}>Quick Questions</h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             {quickQuestions.map((question, index) => (
               <button
                 key={index}
                 onClick={() => askQuickQuestion(question)}
-                className="quick-question-btn"
                 style={{
                   fontSize: '0.875rem',
                   padding: '0.5rem 0.75rem',
@@ -402,10 +427,17 @@ function AssistantContent() {
                   color: '#111827',
                   borderRadius: '0.5rem',
                   border: 'none',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#e5e7eb';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
               >
                 {question}
               </button>
@@ -415,12 +447,17 @@ function AssistantContent() {
 
         {/* Disclaimer */}
         <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-            ⚠️ MyFo is a budgeting tool, not a financial advisor. Recommendations are for educational purposes only.
-            All calculations are deterministic based on your input data. Always make final decisions based on your own judgment.
+          <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>
+            ⚠️ MyFO is a budgeting tool, not a financial advisor. Recommendations are for educational purposes only.
           </p>
         </div>
       </div>
+      <style>{`
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0); }
+          40% { transform: scale(1); }
+        }
+      `}</style>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
+import { ChatMessage } from "@/components/ui/ChatMessage";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -48,7 +49,7 @@ function AssistantContent() {
         setMessages([
           {
             role: 'assistant',
-            content: "Hi! I'm MyFo, your financial copilot. Ask me questions like:\n\n• Can I afford to buy a $90 concert ticket?\n• How am I doing on my budget?\n• What should I cut back on?\n• Can I take a trip that costs $400?\n\nI'll give you honest answers based on your actual budget, not guesses!",
+            content: "Hi! I'm MyFo, your financial copilot. Ask me questions like:\n\n- Can I afford to buy a $90 concert ticket?\n- How am I doing on my budget?\n- What should I cut back on?\n- Can I take a trip that costs $400?\n\nI'll give you honest answers based on your actual budget, not guesses!",
           },
         ]);
       }
@@ -175,7 +176,7 @@ function AssistantContent() {
   function clearChat() {
     const welcomeMessage: Message = {
       role: 'assistant',
-      content: "Hi! I'm MyFo, your financial copilot. Ask me questions like:\n\n• Can I afford to buy a $90 concert ticket?\n• How am I doing on my budget?\n• What should I cut back on?\n• Can I take a trip that costs $400?\n\nI'll give you honest answers based on your actual budget, not guesses!",
+            content: "Hi! I'm MyFo, your financial copilot. Ask me questions like:\n\n- Can I afford to buy a $90 concert ticket?\n- How am I doing on my budget?\n- What should I cut back on?\n- Can I take a trip that costs $400?\n\nI'll give you honest answers based on your actual budget, not guesses!",
     };
     setMessages([welcomeMessage]);
     try {
@@ -316,26 +317,12 @@ function AssistantContent() {
             gap: '1rem',
           }}>
             {messages.map((message, index) => (
-              <div
+              <ChatMessage
                 key={index}
-                className={message.role === 'user' ? 'message-user' : 'message-assistant'}
-                style={{ display: 'flex', justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start' }}
-              >
-                <div
-                  style={{
-                    maxWidth: '75%',
-                    borderRadius: message.role === 'assistant' ? '0.75rem 0.75rem 0.75rem 0.25rem' : '0.75rem 0.75rem 0.25rem 0.75rem',
-                    padding: '0.875rem 1rem',
-                    backgroundColor: message.role === 'user' ? '#76B89F' : '#f3f4f6',
-                    color: message.role === 'user' ? '#ffffff' : '#111827',
-                    fontSize: '0.875rem',
-                    lineHeight: 1.5,
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-                  }}
-                >
-                  <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{message.content}</p>
-                </div>
-              </div>
+                message={message.content}
+                isBot={message.role === 'assistant'}
+                showTyping={index === messages.length - 1 && message.role === 'assistant'}
+              />
             ))}
             {loading && (
               <div style={{ display: 'flex', justifyContent: 'flex-start' }}>

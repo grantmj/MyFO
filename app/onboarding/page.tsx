@@ -258,7 +258,7 @@ export default function OnboardingPage() {
         startDate,
         endDate,
         disbursementDate,
-        startingBalance: currentSavings + disbursement, // Include current savings
+        startingBalance: currentSavings, // Just savings - grants + loans already = disbursement
         grants: grantsAmount,
         loans: loans,
         monthlyIncome: totalMonthlyIncome,

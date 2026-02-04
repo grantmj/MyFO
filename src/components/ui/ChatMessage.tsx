@@ -68,6 +68,9 @@ export function ChatMessage({ message, isBot, showTyping = false }: ChatMessageP
           fontSize: '0.9rem',
           lineHeight: 1.6,
           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+          wordBreak: 'break-word',
+          overflowWrap: 'break-word',
+          overflow: 'hidden',
         }}
       >
         <div className="markdown-content">

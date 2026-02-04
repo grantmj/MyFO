@@ -344,6 +344,7 @@ export default function OnboardingPage() {
             style={{
             flex: 1,
             overflowY: 'auto',
+            overflowX: 'hidden',
             padding: '1.5rem',
             display: 'flex',
             flexDirection: 'column',

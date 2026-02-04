@@ -39,6 +39,17 @@ export default function Dashboard() {
   });
   const [savingFunds, setSavingFunds] = useState(false);
 
+  // Planned expense modal
+  const [showPlannedModal, setShowPlannedModal] = useState(false);
+  const [newPlannedItem, setNewPlannedItem] = useState({
+    name: '',
+    amount: '',
+    date: '',
+    category: 'misc' as string,
+  });
+  const [savingPlanned, setSavingPlanned] = useState(false);
+  const [allPlannedItems, setAllPlannedItems] = useState<any[]>([]);
+
   useEffect(() => {
     initializeDashboard();
   }, []);
@@ -127,6 +138,17 @@ export default function Dashboard() {
         } catch (e) {
           console.warn('Failed to parse financial health');
         }
+      }
+
+      // Fetch all planned items (not just next 7 days)
+      try {
+        const plannedRes = await fetch(`/api/planned-items?userId=${user.id}`);
+        if (plannedRes.ok) {
+          const { plannedItems } = await plannedRes.json();
+          setAllPlannedItems(plannedItems || []);
+        }
+      } catch (e) {
+        console.warn('Failed to fetch planned items');
       }
 
       setLoading(false);
@@ -227,6 +249,41 @@ export default function Dashboard() {
       showToast('Failed to update funds', 'error');
     }
     setSavingFunds(false);
+  }
+
+  async function savePlannedItem() {
+    if (!userId || !newPlannedItem.name || !newPlannedItem.amount || !newPlannedItem.date) {
+      showToast('Please fill in all fields', 'error');
+      return;
+    }
+
+    setSavingPlanned(true);
+    try {
+      const res = await fetch('/api/planned-items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          name: newPlannedItem.name,
+          amount: parseFloat(newPlannedItem.amount),
+          date: newPlannedItem.date,
+          category: newPlannedItem.category,
+        }),
+      });
+
+      if (res.ok) {
+        showToast('Planned expense added!', 'success');
+        setShowPlannedModal(false);
+        setNewPlannedItem({ name: '', amount: '', date: '', category: 'misc' });
+        initializeDashboard();
+      } else {
+        showToast('Failed to add planned expense', 'error');
+      }
+    } catch (error) {
+      console.error('Error saving planned item:', error);
+      showToast('Failed to add planned expense', 'error');
+    }
+    setSavingPlanned(false);
   }
 
   if (loading) {
@@ -686,6 +743,165 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Add Planned Expense Modal */}
+        {showPlannedModal && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+            }}
+            onClick={() => setShowPlannedModal(false)}
+          >
+            <div
+              style={{
+                background: 'white',
+                borderRadius: '1rem',
+                padding: '2rem',
+                maxWidth: '450px',
+                width: '90%',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827', marginBottom: '1.5rem' }}>
+                📅 Add Planned Expense
+              </h2>
+
+              {/* Name */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                  What are you saving for?
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Textbooks, Spring Break Trip"
+                  value={newPlannedItem.name}
+                  onChange={(e) => setNewPlannedItem({ ...newPlannedItem, name: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+
+              {/* Amount */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                  How much?
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1.25rem', color: '#6b7280' }}>$</span>
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    value={newPlannedItem.amount}
+                    onChange={(e) => setNewPlannedItem({ ...newPlannedItem, amount: e.target.value })}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '0.5rem',
+                      fontSize: '1rem',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Date */}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                  When?
+                </label>
+                <input
+                  type="date"
+                  value={newPlannedItem.date}
+                  onChange={(e) => setNewPlannedItem({ ...newPlannedItem, date: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+
+              {/* Category */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.25rem' }}>
+                  Category
+                </label>
+                <select
+                  value={newPlannedItem.category}
+                  onChange={(e) => setNewPlannedItem({ ...newPlannedItem, category: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem',
+                    background: 'white',
+                  }}
+                >
+                  <option value="groceries">🛒 Groceries</option>
+                  <option value="dining">🍽️ Dining</option>
+                  <option value="entertainment">🎬 Entertainment</option>
+                  <option value="transportation">🚗 Transportation</option>
+                  <option value="rent">🏠 Rent</option>
+                  <option value="utilities">💡 Utilities</option>
+                  <option value="subscriptions">📱 Subscriptions</option>
+                  <option value="misc">📦 Other</option>
+                </select>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  onClick={() => setShowPlannedModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    background: 'white',
+                    color: '#374151',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={savePlannedItem}
+                  disabled={savingPlanned}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    background: savingPlanned ? '#9ca3af' : '#10b981',
+                    color: 'white',
+                    fontWeight: 600,
+                    cursor: savingPlanned ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {savingPlanned ? 'Adding...' : 'Add Expense'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Financial Health Summary */}
         {financialHealth && (
           <div className="card-animate" style={{ ...cardStyle, marginBottom: '1.5rem' }}>
@@ -865,9 +1081,12 @@ export default function Dashboard() {
               <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827' }}>
                 Planned Expenses
               </h3>
-              <a href="/transactions" style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 500, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <button
+                onClick={() => setShowPlannedModal(true)}
+                style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+              >
                 + Add Item
-              </a>
+              </button>
             </div>
             {snapshot.plannedNext7Days.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -905,15 +1124,38 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-                <div style={{ width: '4rem', height: '4rem', margin: '0 auto 1rem', borderRadius: '50%', backgroundColor: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button
+                onClick={() => setShowPlannedModal(true)}
+                style={{ display: 'block', width: '100%', textAlign: 'center', padding: '2rem 0', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                <div
+                  style={{
+                    width: '4rem',
+                    height: '4rem',
+                    margin: '0 auto 1rem',
+                    borderRadius: '50%',
+                    backgroundColor: '#d1fae5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = '#a7f3d0';
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = '#d1fae5';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
                   <svg style={{ width: '2rem', height: '2rem', color: '#059669' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </div>
                 <p style={{ color: '#4b5563', marginBottom: '0.5rem' }}>No planned items yet</p>
-                <a href="/transactions" style={{ fontSize: '0.875rem', color: '#10b981', textDecoration: 'none', fontWeight: 500 }}>Add your first planned expense →</a>
-              </div>
+                <span style={{ fontSize: '0.875rem', color: '#10b981', fontWeight: 500 }}>Add your first planned expense →</span>
+              </button>
             )}
           </div>
 

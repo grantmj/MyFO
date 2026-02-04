@@ -1168,21 +1168,32 @@ export default function IncomePage() {
                                     <span style={{ fontWeight: 600, color: '#dc2626' }}>$250</span>
                                     <span>Oct 23-25, 2026</span>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        setFormType('other');
-                                        setFormName('Formula 1 Austin 2026');
-                                        setFormAmount('-250');
-                                        setFormFrequency('one_time');
-                                        setFormIsLoan(false);
-                                        setFormNotes('F1 race weekend ticket - one-time event');
-                                        setShowAddModal(true);
-                                    }}
-                                    className="btn-primary"
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
-                                >
-                                    + Add This Event
-                                </button>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <a
+                                        href="https://circuitoftheamericas.com/event/f1/tickets/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="link-btn"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#fee2e2', color: '#991b1b', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
+                                    >
+                                        Buy Tickets →
+                                    </a>
+                                    <button
+                                        onClick={() => {
+                                            setFormType('other');
+                                            setFormName('Formula 1 Austin 2026');
+                                            setFormAmount('-250');
+                                            setFormFrequency('one_time');
+                                            setFormIsLoan(false);
+                                            setFormNotes('F1 race weekend ticket - one-time event');
+                                            setShowAddModal(true);
+                                        }}
+                                        className="btn-primary"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    >
+                                        + Track
+                                    </button>
+                                </div>
                                 <p style={{ fontSize: '0.7rem', color: '#dc2626', marginTop: '0.5rem', textAlign: 'center' }}>
                                     Impact: -$250 one-time expense
                                 </p>
@@ -1201,21 +1212,32 @@ export default function IncomePage() {
                                     <span style={{ fontWeight: 600, color: '#dc2626' }}>$200</span>
                                     <span>Dec 30-31, 2026</span>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        setFormType('other');
-                                        setFormName('Decadence 2026');
-                                        setFormAmount('-200');
-                                        setFormFrequency('one_time');
-                                        setFormIsLoan(false);
-                                        setFormNotes('NYE rave ticket - one-time event');
-                                        setShowAddModal(true);
-                                    }}
-                                    className="btn-primary"
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
-                                >
-                                    + Add This Event
-                                </button>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <a
+                                        href="https://decadencearizona.com/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="link-btn"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#fce7f3', color: '#831843', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
+                                    >
+                                        Buy Tickets →
+                                    </a>
+                                    <button
+                                        onClick={() => {
+                                            setFormType('other');
+                                            setFormName('Decadence 2026');
+                                            setFormAmount('-200');
+                                            setFormFrequency('one_time');
+                                            setFormIsLoan(false);
+                                            setFormNotes('NYE rave ticket - one-time event');
+                                            setShowAddModal(true);
+                                        }}
+                                        className="btn-primary"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    >
+                                        + Track
+                                    </button>
+                                </div>
                                 <p style={{ fontSize: '0.7rem', color: '#dc2626', marginTop: '0.5rem', textAlign: 'center' }}>
                                     Impact: -$200 one-time expense
                                 </p>
@@ -1234,21 +1256,32 @@ export default function IncomePage() {
                                     <span style={{ fontWeight: 600, color: '#dc2626' }}>$200</span>
                                     <span>Feb 14-15, 2026</span>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        setFormType('other');
-                                        setFormName('Snowbowl Trip');
-                                        setFormAmount('-200');
-                                        setFormFrequency('one_time');
-                                        setFormIsLoan(false);
-                                        setFormNotes('Ski trip with friends - one-time event');
-                                        setShowAddModal(true);
-                                    }}
-                                    className="btn-primary"
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
-                                >
-                                    + Add This Event
-                                </button>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <a
+                                        href="https://store.snowbowl.ski/calendar.aspx?department=ticket:win&category=variable&item=1day&link=Lift+Tickets"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="link-btn"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#dbeafe', color: '#1e3a8a', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
+                                    >
+                                        Buy Tickets →
+                                    </a>
+                                    <button
+                                        onClick={() => {
+                                            setFormType('other');
+                                            setFormName('Snowbowl Trip');
+                                            setFormAmount('-200');
+                                            setFormFrequency('one_time');
+                                            setFormIsLoan(false);
+                                            setFormNotes('Ski trip with friends - one-time event');
+                                            setShowAddModal(true);
+                                        }}
+                                        className="btn-primary"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    >
+                                        + Track
+                                    </button>
+                                </div>
                                 <p style={{ fontSize: '0.7rem', color: '#dc2626', marginTop: '0.5rem', textAlign: 'center' }}>
                                     Impact: -$200 one-time expense
                                 </p>
@@ -1267,21 +1300,32 @@ export default function IncomePage() {
                                     <span style={{ fontWeight: 600, color: '#dc2626' }}>$50</span>
                                     <span>Oct 10, 2026</span>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        setFormType('other');
-                                        setFormName('Arizona State Fair');
-                                        setFormAmount('-50');
-                                        setFormFrequency('one_time');
-                                        setFormIsLoan(false);
-                                        setFormNotes('State fair visit - one-time event');
-                                        setShowAddModal(true);
-                                    }}
-                                    className="btn-primary"
-                                    style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
-                                >
-                                    + Add This Event
-                                </button>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <a
+                                        href="https://azstatefair.com/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="link-btn"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#fef3c7', color: '#78350f', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem', textAlign: 'center', textDecoration: 'none' }}
+                                    >
+                                        Buy Tickets →
+                                    </a>
+                                    <button
+                                        onClick={() => {
+                                            setFormType('other');
+                                            setFormName('Arizona State Fair');
+                                            setFormAmount('-50');
+                                            setFormFrequency('one_time');
+                                            setFormIsLoan(false);
+                                            setFormNotes('State fair visit - one-time event');
+                                            setShowAddModal(true);
+                                        }}
+                                        className="btn-primary"
+                                        style={{ flex: 1, padding: '0.5rem', borderRadius: '0.5rem', background: '#9b8fc9', color: 'white', fontWeight: 500, border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    >
+                                        + Track
+                                    </button>
+                                </div>
                                 <p style={{ fontSize: '0.7rem', color: '#dc2626', marginTop: '0.5rem', textAlign: 'center' }}>
                                     Impact: -$50 one-time expense
                                 </p>

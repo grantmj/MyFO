@@ -19,6 +19,11 @@ type QuestionStep =
   | 'disbursement'
   | 'loans'
   | 'confirmation'
+  | 'hasJob'
+  | 'jobIncome'
+  | 'currentSavings'
+  | 'hasParentalSupport'
+  | 'parentalSupport'
   | 'weeklyBudget'
   | 'summary'
   | 'done';
@@ -37,6 +42,11 @@ export default function OnboardingPage() {
   // User data
   const [disbursement, setDisbursement] = useState(0);
   const [loans, setLoans] = useState(0);
+  const [hasJob, setHasJob] = useState<boolean | null>(null);
+  const [jobIncome, setJobIncome] = useState(0);
+  const [currentSavings, setCurrentSavings] = useState(0);
+  const [hasParentalSupport, setHasParentalSupport] = useState<boolean | null>(null);
+  const [parentalSupport, setParentalSupport] = useState(0);
   const [weeklyBudget, setWeeklyBudget] = useState(0);
 
   useEffect(() => {
@@ -96,7 +106,7 @@ export default function OnboardingPage() {
           break;
         case 'disbursement':
           addBotMessage("How much of that disbursement is from student loans?", true);
-          setCurrentStep('loans');
+         setCurrentStep('loans');
           break;
         case 'loans':
           const grants = disbursement - loans;
@@ -105,12 +115,47 @@ export default function OnboardingPage() {
           setTimeout(() => askNextQuestion('confirmation'), 2000);
           break;
         case 'confirmation':
-          addBotMessage("Now, what's your estimated weekly spending budget?", true);
+          addBotMessage("Do you have a job or work-study position? (yes/no)", true);
+          setCurrentStep('hasJob');
+          break;
+        case 'hasJob':
+          if (hasJob) {
+            addBotMessage("How much do you earn per week from your job?", true);
+            setCurrentStep('jobIncome');
+          } else {
+            addBotMessage("Got it! 👍", true);
+            setTimeout(() => askNextQuestion('currentSavings'), 1000);
+          }
+          break;
+        case 'jobIncome':
+          addBotMessage(`Perfect! $${jobIncome.toFixed(2)}/week is solid income. 💪`, true);
+          setCurrentStep('currentSavings');
+          setTimeout(() => askNextQuestion('currentSavings'), 1500);
+          break;
+        case 'currentSavings':
+          addBotMessage("How much do you currently have saved up?", true);
+          setCurrentStep('currentSavings');
+          break;
+        case 'hasParentalSupport':
+          if (hasParentalSupport) {
+            addBotMessage("How much do your parents contribute per week?", true);
+            setCurrentStep('parentalSupport');
+          } else {
+            addBotMessage("No worries! 👍", true);
+            setTimeout(() => askNextQuestion('weeklyBudget'), 1000);
+          }
+          break;
+        case 'parentalSupport':
+          addBotMessage(`Nice! $${parentalSupport.toFixed(2)}/week from family helps a lot. 👨‍👩‍👧‍👦`, true);
           setCurrentStep('weeklyBudget');
+          setTimeout(() => askNextQuestion('weeklyBudget'), 1500);
           break;
         case 'weeklyBudget':
+          addBotMessage("Finally, what's your estimated weekly spending budget?", true);
+          setCurrentStep('weeklyBudget');
+          break;
+        case 'summary':
           addBotMessage(`Perfect! I've got everything I need. Let me set up your budget plan... 🚀`, true);
-          setCurrentStep('summary');
           setTimeout(() => handleSubmit(), 2000);
           break;
       }
@@ -118,6 +163,28 @@ export default function OnboardingPage() {
   }
 
   function handleUserInput(value: string) {
+    // Handle yes/no questions
+    if (currentStep === 'hasJob' || currentStep === 'hasParentalSupport') {
+      const response = value.toLowerCase().trim();
+      if (!['yes', 'no', 'y', 'n'].includes(response)) {
+        showToast('Please answer "yes" or "no"', 'error');
+        return;
+      }
+      
+      const answer = response === 'yes' || response === 'y';
+      addUserMessage(answer ? 'Yes' : 'No');
+      
+      if (currentStep === 'hasJob') {
+        setHasJob(answer);
+        askNextQuestion('hasJob');
+      } else if (currentStep === 'hasParentalSupport') {
+        setHasParentalSupport(answer);
+        askNextQuestion('hasParentalSupport');
+      }
+      return;
+    }
+    
+    // Handle numeric questions
     const numValue = parseFloat(value);
     
     if (isNaN(numValue) || numValue < 0) {
@@ -136,9 +203,30 @@ export default function OnboardingPage() {
         setLoans(numValue);
         askNextQuestion('loans');
         break;
+      case 'jobIncome':
+        setJobIncome(numValue);
+        askNextQuestion('jobIncome');
+        break;
+      case 'currentSavings':
+        setCurrentSavings(numValue);
+        // After savings, ask about parental support
+        setTimeout(() => {
+          setIsTyping(true);
+          setTimeout(() => {
+            setIsTyping(false);
+            addBotMessage("Do your parents support you financially? (yes/no)", true);
+            setCurrentStep('hasParentalSupport');
+          }, 800);
+        }, 1000);
+        break;
+      case 'parentalSupport':
+        setParentalSupport(numValue);
+        askNextQuestion('parentalSupport');
+        break;
       case 'weeklyBudget':
         setWeeklyBudget(numValue);
-        askNextQuestion('weeklyBudget');
+        setCurrentStep('summary');
+        askNextQuestion('summary');
         break;
     }
   }
@@ -156,14 +244,19 @@ export default function OnboardingPage() {
       const disbursementDate = new Date();
       const grantsAmount = Math.max(0, disbursement - loans);
 
+      // Calculate monthly income from all sources
+      const weeklyJobIncome = hasJob ? jobIncome : 0;
+      const weeklyParentalSupport = hasParentalSupport ? parentalSupport : 0;
+      const totalMonthlyIncome = (weeklyJobIncome + weeklyParentalSupport) * 4.33; // avg weeks per month
+
       const data = {
         startDate,
         endDate,
         disbursementDate,
-        startingBalance: disbursement,
+        startingBalance: currentSavings + disbursement, // Include current savings
         grants: grantsAmount,
         loans: loans,
-        monthlyIncome: 0,
+        monthlyIncome: totalMonthlyIncome,
         fixedCosts: { rent: 0, utilities: 0, subscriptions: 0, transportation: 0 },
         variableBudgets: {
           groceries: weeklyBudget * 0.4,
@@ -197,7 +290,8 @@ export default function OnboardingPage() {
     }
   }
 
-  const canInput = ['disbursement', 'loans', 'weeklyBudget'].includes(currentStep);
+  const canInput = ['disbursement', 'loans', 'hasJob', 'jobIncome', 'currentSavings', 'hasParentalSupport', 'parentalSupport', 'weeklyBudget'].includes(currentStep);
+  const isYesNoQuestion = ['hasJob', 'hasParentalSupport'].includes(currentStep);
 
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb', display: 'flex', flexDirection: 'column' }}>
@@ -277,10 +371,15 @@ export default function OnboardingPage() {
             <ChatInput
               onSubmit={handleUserInput}
               disabled={!canInput || isTyping || loading}
-              type="number"
+              type={isYesNoQuestion ? 'text' : 'number'}
               placeholder={
                 currentStep === 'disbursement' ? 'e.g., 5000' :
                 currentStep === 'loans' ? 'e.g., 2000' :
+                currentStep === 'hasJob' ? 'yes or no' :
+                currentStep === 'jobIncome' ? 'e.g., 150' :
+                currentStep === 'currentSavings' ? 'e.g., 1000' :
+                currentStep === 'hasParentalSupport' ? 'yes or no' :
+                currentStep === 'parentalSupport' ? 'e.g., 100' :
                 currentStep === 'weeklyBudget' ? 'e.g., 200' :
                 'Processing...'
               }

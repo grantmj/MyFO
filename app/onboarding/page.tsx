@@ -93,7 +93,7 @@ export default function OnboardingPage() {
     setMessages(prev => [...prev, { text, isBot: false }]);
   }
 
-  function askNextQuestion(step: QuestionStep) {
+  function askNextQuestion(step: QuestionStep, value?: number) {
     setIsTyping(true);
     
     setTimeout(() => {
@@ -109,8 +109,9 @@ export default function OnboardingPage() {
          setCurrentStep('loans');
           break;
         case 'loans':
-          const grants = disbursement - loans;
-          addBotMessage(`Great! So you have $${grants.toFixed(2)} in grants/scholarships and $${loans.toFixed(2)} in loans. 💰`, true);
+          const loanAmount = value ?? loans;
+          const grants = disbursement - loanAmount;
+          addBotMessage(`Great! So you have $${grants.toFixed(2)} in grants/scholarships and $${loanAmount.toFixed(2)} in loans. 💰`, true);
           setCurrentStep('confirmation');
           setTimeout(() => askNextQuestion('confirmation'), 2000);
           break;
@@ -201,7 +202,7 @@ export default function OnboardingPage() {
         break;
       case 'loans':
         setLoans(numValue);
-        askNextQuestion('loans');
+        askNextQuestion('loans', numValue);
         break;
       case 'jobIncome':
         setJobIncome(numValue);

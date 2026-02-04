@@ -763,7 +763,7 @@ BE PROACTIVE WITH SUGGESTIONS:
     ];
 
     let completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5.1-2025-11-13',
       messages,
       tools: functions,
       tool_choice: 'auto',
@@ -810,7 +810,7 @@ BE PROACTIVE WITH SUGGESTIONS:
       }
 
       completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.5-turbo',
         messages,
         temperature: 0.7,
         max_tokens: 500,

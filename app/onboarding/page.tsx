@@ -93,7 +93,7 @@ export default function OnboardingPage() {
     setMessages(prev => [...prev, { text, isBot: false }]);
   }
 
-  function askNextQuestion(step: QuestionStep, value?: number) {
+  function askNextQuestion(step: QuestionStep, value?: number, boolValue?: boolean) {
     setIsTyping(true);
     
     setTimeout(() => {
@@ -120,7 +120,8 @@ export default function OnboardingPage() {
           setCurrentStep('hasJob');
           break;
         case 'hasJob':
-          if (hasJob) {
+          const hasJobAnswer = boolValue ?? hasJob;
+          if (hasJobAnswer) {
             addBotMessage("How much do you earn per week from your job?", true);
             setCurrentStep('jobIncome');
           } else {
@@ -129,7 +130,8 @@ export default function OnboardingPage() {
           }
           break;
         case 'jobIncome':
-          addBotMessage(`Perfect! $${jobIncome.toFixed(2)}/week is solid income. 💪`, true);
+          const jobIncomeAmount = value ?? jobIncome;
+          addBotMessage(`Perfect! $${jobIncomeAmount.toFixed(2)}/week is solid income. 💪`, true);
           setCurrentStep('currentSavings');
           setTimeout(() => askNextQuestion('currentSavings'), 1500);
           break;
@@ -138,7 +140,8 @@ export default function OnboardingPage() {
           setCurrentStep('currentSavings');
           break;
         case 'hasParentalSupport':
-          if (hasParentalSupport) {
+          const hasParentalAnswer = boolValue ?? hasParentalSupport;
+          if (hasParentalAnswer) {
             addBotMessage("How much do your parents contribute per week?", true);
             setCurrentStep('parentalSupport');
           } else {
@@ -147,7 +150,8 @@ export default function OnboardingPage() {
           }
           break;
         case 'parentalSupport':
-          addBotMessage(`Nice! $${parentalSupport.toFixed(2)}/week from family helps a lot. 👨‍👩‍👧‍👦`, true);
+          const parentalAmount = value ?? parentalSupport;
+          addBotMessage(`Nice! $${parentalAmount.toFixed(2)}/week from family helps a lot. 👨‍👩‍👧‍👦`, true);
           setCurrentStep('weeklyBudget');
           setTimeout(() => askNextQuestion('weeklyBudget'), 1500);
           break;
@@ -177,10 +181,10 @@ export default function OnboardingPage() {
       
       if (currentStep === 'hasJob') {
         setHasJob(answer);
-        askNextQuestion('hasJob');
+        askNextQuestion('hasJob', undefined, answer);
       } else if (currentStep === 'hasParentalSupport') {
         setHasParentalSupport(answer);
-        askNextQuestion('hasParentalSupport');
+        askNextQuestion('hasParentalSupport', undefined, answer);
       }
       return;
     }
@@ -206,7 +210,7 @@ export default function OnboardingPage() {
         break;
       case 'jobIncome':
         setJobIncome(numValue);
-        askNextQuestion('jobIncome');
+        askNextQuestion('jobIncome', numValue);
         break;
       case 'currentSavings':
         setCurrentSavings(numValue);
@@ -222,7 +226,7 @@ export default function OnboardingPage() {
         break;
       case 'parentalSupport':
         setParentalSupport(numValue);
-        askNextQuestion('parentalSupport');
+        askNextQuestion('parentalSupport', numValue);
         break;
       case 'weeklyBudget':
         setWeeklyBudget(numValue);

@@ -123,7 +123,7 @@ function BalanceGraph({ transactions, viewPeriod, initialBalance }: {
 
   if (balanceData.length === 0) {
     return (
-      <div style={cardStyle}>
+      <div className="card-animate" style={cardStyle}>
         <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
           📈 Balance Over Time
         </h2>
@@ -188,7 +188,7 @@ function BalanceGraph({ transactions, viewPeriod, initialBalance }: {
   const negativePathD = negativePath.join(' ');
 
   return (
-    <div style={cardStyle}>
+    <div className="card-animate" style={cardStyle}>
       <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         📈 Balance Over Time
       </h2>
@@ -771,8 +771,109 @@ export default function TransactionsPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
-      <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1rem' }}>
-        <div style={{ marginBottom: '2rem' }}>
+      <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes scaleIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                }
+                .page-container {
+                    animation: fadeIn 0.4s ease-out;
+                }
+                .header-section {
+                    animation: fadeInUp 0.5s ease-out;
+                }
+                .card-animate {
+                    animation: scaleIn 0.5s ease-out;
+                }
+                .btn-primary {
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                    position: relative;
+                    overflow: hidden;
+                }
+                .btn-primary:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 16px rgba(118, 184, 159, 0.35);
+                }
+                .btn-primary:active {
+                    transform: translateY(0) scale(0.98);
+                }
+                .btn-secondary {
+                    transition: all 0.2s ease;
+                }
+                .btn-secondary:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                }
+                .btn-secondary:active {
+                    transform: scale(0.95);
+                }
+                .income-item {
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .income-item:hover {
+                    transform: translateX(4px);
+                    background: #f3f4f6 !important;
+                }
+                .opportunity-card {
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .opportunity-card:hover {
+                    transform: translateX(4px);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                }
+                .job-card {
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .job-card:hover {
+                    transform: translateY(-4px) scale(1.02);
+                    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+                }
+                .modal-overlay {
+                    animation: fadeIn 0.2s ease-out;
+                }
+                .modal-content {
+                    animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                }
+                .progress-bar {
+                    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .score-circle {
+                    animation: fadeIn 0.6s ease-out;
+                }
+                .stat-card {
+                    animation: scaleIn 0.5s ease-out;
+                    transition: all 0.3s ease;
+                }
+                .stat-card:hover {
+                    transform: scale(1.05);
+                }
+                .badge {
+                    transition: all 0.2s ease;
+                }
+                .badge:hover {
+                    transform: scale(1.1);
+                }
+                .link-btn {
+                    transition: all 0.2s ease;
+                }
+                .link-btn:hover {
+                    transform: translateX(2px);
+                }
+            `}</style>
+      <div className="page-container" style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1rem' }}>
+        <div className="header-section" style={{ marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>
             Transactions
           </h1>
@@ -867,7 +968,7 @@ export default function TransactionsPage() {
 
             {/* Empty State for Analytics */}
             {transactions.length === 0 ? (
-              <div style={cardStyle}>
+              <div className="card-animate" style={cardStyle}>
                 <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
                   <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📊</div>
                   <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>
@@ -878,6 +979,7 @@ export default function TransactionsPage() {
                   </p>
                   <button
                     onClick={() => setActiveTab('manage')}
+                    className="btn-primary"
                     style={{
                       padding: '0.75rem 1.5rem',
                       borderRadius: '0.5rem',
@@ -898,7 +1000,7 @@ export default function TransactionsPage() {
                 {/* Spending Overview Cards */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
           {/* Balance/Available Funds */}
-          <div style={{ ...cardStyle, marginBottom: 0 }}>
+          <div className="stat-card" style={{ ...cardStyle, marginBottom: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '1.25rem' }}>💵</span>
               <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
@@ -923,7 +1025,7 @@ export default function TransactionsPage() {
           </div>
 
           {/* Total Spending */}
-          <div style={{ ...cardStyle, marginBottom: 0 }}>
+          <div className="stat-card" style={{ ...cardStyle, marginBottom: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '1.25rem' }}>💰</span>
               <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Total Spending</span>
@@ -943,7 +1045,7 @@ export default function TransactionsPage() {
           </div>
 
           {/* Daily Average */}
-          <div style={{ ...cardStyle, marginBottom: 0 }}>
+          <div className="stat-card" style={{ ...cardStyle, marginBottom: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '1.25rem' }}>📊</span>
               <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Daily Average</span>
@@ -957,7 +1059,7 @@ export default function TransactionsPage() {
           </div>
 
           {/* Transaction Count */}
-          <div style={{ ...cardStyle, marginBottom: 0 }}>
+          <div className="stat-card" style={{ ...cardStyle, marginBottom: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '1.25rem' }}>🧾</span>
               <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Transactions</span>
@@ -973,7 +1075,7 @@ export default function TransactionsPage() {
 
         {/* Category Breakdown */}
         {spendingAnalytics.categoryTotals.length > 0 && (
-          <div style={cardStyle}>
+          <div className="card-animate" style={cardStyle}>
             <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               📊 Spending by Category
             </h2>
@@ -990,6 +1092,7 @@ export default function TransactionsPage() {
                     </div>
                     <div style={{ height: '8px', background: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
                       <div
+                        className="progress-bar"
                         style={{
                           height: '100%',
                           width: `${Math.min(cat.percentage, 100)}%`,
@@ -1013,13 +1116,13 @@ export default function TransactionsPage() {
         {spendingAnalytics.topExpenses.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
             {/* Top Expenses */}
-            <div style={cardStyle}>
+            <div className="card-animate" style={cardStyle}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 🔥 Top Expenses
               </h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {spendingAnalytics.topExpenses.map((tx, i) => (
-                  <div key={tx.id} style={{
+                  <div className="income-item" key={tx.id} style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -1073,7 +1176,7 @@ export default function TransactionsPage() {
         {/* Import & Manage Tab */}
         {activeTab === 'manage' && (
           <>
-        <div style={cardStyle}>
+        <div className="card-animate" style={cardStyle}>
           <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>Import from PDF</h2>
           <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
             Upload a credit card statement PDF - we&apos;ll automatically extract and categorize transactions using AI.
@@ -1150,6 +1253,7 @@ export default function TransactionsPage() {
                   <button
                     onClick={confirmPdfImport}
                     disabled={uploading}
+                    className="btn-primary"
                     style={{
                       padding: '0.5rem 1rem',
                       borderRadius: '0.5rem',
@@ -1166,6 +1270,7 @@ export default function TransactionsPage() {
                   </button>
                   <button
                     onClick={cancelPdfImport}
+                    className="btn-secondary"
                     style={{
                       padding: '0.5rem 1rem',
                       borderRadius: '0.5rem',
@@ -1186,7 +1291,7 @@ export default function TransactionsPage() {
         </div>
 
         {/* CSV Import Section */}
-        <div style={cardStyle}>
+        <div className="card-animate" style={cardStyle}>
           <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>Import from CSV</h2>
           <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
             Upload a CSV file from your bank. Should include Date, Description, and Amount columns.
@@ -1253,6 +1358,7 @@ export default function TransactionsPage() {
                   <button
                     onClick={() => processCSV(csvData, dateColumn, descColumn, amountColumn)}
                     disabled={!dateColumn || !descColumn || !amountColumn || uploading}
+                    className="btn-primary"
                     style={{
                       padding: '0.5rem 1rem',
                       borderRadius: '0.5rem',
@@ -1269,6 +1375,7 @@ export default function TransactionsPage() {
                   </button>
                   <button
                     onClick={resetCSVState}
+                    className="btn-secondary"
                     style={{
                       padding: '0.5rem 1rem',
                       borderRadius: '0.5rem',
@@ -1289,7 +1396,7 @@ export default function TransactionsPage() {
         </div>
 
         {/* Bank/Credit Card Linking Section */}
-        <div style={cardStyle}>
+        <div className="card-animate" style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <div>
               <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#111827', marginBottom: '0.25rem' }}>Connect Your Accounts</h2>
@@ -1408,7 +1515,7 @@ export default function TransactionsPage() {
 
         {/* Transaction History Tab */}
         {activeTab === 'history' && (
-          <div style={cardStyle}>
+          <div className="card-animate" style={cardStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', margin: 0 }}>
                 All Transactions ({transactions.length})
@@ -1416,6 +1523,7 @@ export default function TransactionsPage() {
               {transactions.length > 0 && (
                 <button
                   onClick={clearAllTransactions}
+                  className="btn-secondary"
                   style={{
                     padding: '0.5rem 1rem',
                     fontSize: '0.875rem',
@@ -1443,6 +1551,7 @@ export default function TransactionsPage() {
                 </p>
                 <button
                   onClick={() => setActiveTab('manage')}
+                  className="btn-primary"
                   style={{
                     padding: '0.75rem 1.5rem',
                     borderRadius: '0.5rem',
@@ -1501,6 +1610,7 @@ export default function TransactionsPage() {
                         <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
                           <button
                             onClick={() => deleteTransaction(transaction.id)}
+                            className="btn-secondary"
                             style={{
                               padding: '0.25rem 0.5rem',
                               fontSize: '0.75rem',

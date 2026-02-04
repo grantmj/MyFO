@@ -281,15 +281,75 @@ export default function Dashboard() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
-      <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1rem' }}>
+      <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes scaleIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                }
+                .page-container {
+                    animation: fadeIn 0.4s ease-out;
+                }
+                .header-section {
+                    animation: fadeInUp 0.5s ease-out;
+                }
+                .card-animate {
+                    animation: scaleIn 0.5s ease-out;
+                }
+                .btn-primary {
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                    position: relative;
+                    overflow: hidden;
+                }
+                .btn-primary:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 16px rgba(118, 184, 159, 0.35);
+                }
+                .btn-primary:active {
+                    transform: translateY(0) scale(0.98);
+                }
+                .btn-secondary {
+                    transition: all 0.2s ease;
+                }
+                .btn-secondary:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                }
+                .btn-secondary:active {
+                    transform: scale(0.95);
+                }
+                .progress-bar {
+                    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .stat-card {
+                    animation: scaleIn 0.5s ease-out;
+                    transition: all 0.3s ease;
+                }
+                .stat-card:hover {
+                    transform: scale(1.05);
+                }
+            `}</style>
+      <div className="page-container" style={{ maxWidth: '72rem', margin: '0 auto', padding: '2rem 1rem' }}>
         {/* Header */}
-        <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="header-section" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <h1 style={{ fontSize: '2.25rem', fontWeight: 700, color: '#111827', margin: 0 }}>Dashboard</h1>
             <p style={{ marginTop: '0.5rem', color: '#6b7280' }}>Your semester financial overview</p>
           </div>
           <button
             onClick={loadDemoData}
+            className="btn-primary"
             style={{
               padding: '0.75rem 1.5rem',
               borderRadius: '0.75rem',
@@ -306,7 +366,7 @@ export default function Dashboard() {
         </div>
 
         {/* Hero Metric - Safe to Spend */}
-        <div style={{ ...cardStyle, marginBottom: '2rem', textAlign: 'center', padding: '2.5rem' }}>
+        <div className="card-animate" style={{ ...cardStyle, marginBottom: '2rem', textAlign: 'center', padding: '2.5rem' }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -337,7 +397,7 @@ export default function Dashboard() {
         {/* Key Metrics Grid */}
         <div style={{ marginBottom: '2rem', display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
           {/* Runway Date */}
-          <div style={cardStyle}>
+          <div className="stat-card" style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <div>
                 <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -369,7 +429,7 @@ export default function Dashboard() {
           </div>
 
           {/* Budget Status */}
-          <div style={cardStyle}>
+          <div className="stat-card" style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
               <div>
                 <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -405,6 +465,7 @@ export default function Dashboard() {
           {/* Remaining Funds - Clickable */}
           <div
             onClick={openFundsModal}
+            className="stat-card"
             style={{
               ...cardStyle,
               cursor: 'pointer',
@@ -622,7 +683,7 @@ export default function Dashboard() {
 
         {/* Financial Health Summary */}
         {financialHealth && (
-          <div style={{ ...cardStyle, marginBottom: '1.5rem' }}>
+          <div className="card-animate" style={{ ...cardStyle, marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{
@@ -698,7 +759,7 @@ export default function Dashboard() {
 
         <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
           {/* Semester Progress with Circular */}
-          <div style={cardStyle}>
+          <div className="card-animate" style={cardStyle}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
               Semester Progress
             </h3>
@@ -747,7 +808,7 @@ export default function Dashboard() {
           </div>
 
           {/* Top Spending Categories */}
-          <div style={cardStyle}>
+          <div className="card-animate" style={cardStyle}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', marginBottom: '1rem' }}>
               Top Spending (Last 14 Days)
             </h3>
@@ -794,7 +855,7 @@ export default function Dashboard() {
           </div>
 
           {/* Upcoming Planned Items */}
-          <div style={cardStyle}>
+          <div className="card-animate" style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827' }}>
                 Planned Expenses
@@ -852,7 +913,7 @@ export default function Dashboard() {
           </div>
 
           {/* FAFSA Checklist */}
-          <div style={cardStyle}>
+          <div className="card-animate" style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827' }}>
                 FAFSA Readiness

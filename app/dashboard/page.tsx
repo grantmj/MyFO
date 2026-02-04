@@ -389,7 +389,12 @@ export default function Dashboard() {
           <details style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
             <summary style={{ cursor: 'pointer' }}>How is this calculated?</summary>
             <p style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#f9fafb', borderRadius: '0.5rem', textAlign: 'left' }}>
-              Safe to spend = min(weekly budget remaining, semester funds ÷ weeks left)
+              1. Start with your remaining funds<br/>
+              2. Subtract future planned expenses (trips, events)<br/>
+              3. Subtract expected fixed costs (rent, bills)<br/>
+              4. Add expected income<br/>
+              5. Divide by remaining weeks<br/>
+              6. Subtract this week's spending
             </p>
           </details>
         </div>

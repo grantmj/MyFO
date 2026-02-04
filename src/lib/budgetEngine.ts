@@ -1,6 +1,6 @@
 import { BudgetSnapshot, FixedCosts, VariableBudgets } from './types';
 import { Category, CATEGORIES } from './constants';
-import { differenceInDays, addWeeks, startOfWeek, isAfter, isBefore, isWithinInterval, addDays } from 'date-fns';
+import { differenceInDays, addWeeks, startOfWeek, endOfWeek, isAfter, isBefore, isWithinInterval, addDays } from 'date-fns';
 
 export interface PlanData {
   startDate: Date;
@@ -30,6 +30,17 @@ export interface PlannedItemData {
 /**
  * DETERMINISTIC BUDGETING ENGINE
  * Produces all budget metrics using only math - no LLM hallucination
+ * 
+ * NEW SMART WEEKLY BUDGET LOGIC:
+ * 1. Calculate total remaining funds
+ * 2. Subtract ALL future planned expenses (trips, events, etc.)
+ * 3. Divide remaining by weeks left to get weekly budget
+ * 4. Subtract this week's spending to get remaining for THIS week
+ * 
+ * This means:
+ * - $10K with 10 weeks left = $1K/week
+ * - If you spend $1K this week, you have $0 left (not $900)
+ * - If you have a $2K trip next month, it reduces all weekly budgets proportionally
  */
 export function calculateBudgetSnapshot(
   plan: PlanData,
@@ -115,12 +126,43 @@ export function calculateBudgetSnapshot(
     }));
   const plannedNext7DaysTotal = plannedNext7Days.reduce((sum, item) => sum + item.amount, 0);
 
-  // 10. Calculate safe-to-spend this week
-  // Formula: (remainingFunds - upcoming planned items) / remaining weeks - fixed per week
-  const safeToSpendThisWeek = Math.max(
-    0,
-    (remainingFundsToday - plannedNext7DaysTotal) / remainingWeeks - fixedPerWeek
-  );
+  // ========================================
+  // 10. NEW SMART WEEKLY BUDGET CALCULATION
+  // ========================================
+  
+  // Get start and end of current week (Monday to Sunday)
+  const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const currentWeekEnd = endOfWeek(today, { weekStartsOn: 1 });
+  
+  // Calculate THIS WEEK's spending
+  const thisWeekSpending = transactions
+    .filter(t => 
+      t.category !== CATEGORIES.INCOME && 
+      t.amount > 0 &&
+      isWithinInterval(t.date, { start: currentWeekStart, end: currentWeekEnd })
+    )
+    .reduce((sum, t) => sum + t.amount, 0);
+  
+  // Calculate ALL future planned expenses (from today onwards)
+  const futurePlannedExpenses = plannedItems
+    .filter(item => isAfter(item.date, today) || item.date.toDateString() === today.toDateString())
+    .reduce((sum, item) => sum + item.amount, 0);
+  
+  // Calculate expected future fixed costs
+  const futureFixedCosts = fixedPerWeek * remainingWeeks;
+  
+  // Calculate expected future income
+  const futureIncome = incomePerWeek * remainingWeeks;
+  
+  // Available funds for discretionary spending:
+  // = Current funds - future planned expenses - future fixed costs + future income
+  const availableForDiscretionary = remainingFundsToday - futurePlannedExpenses - futureFixedCosts + futureIncome;
+  
+  // Weekly discretionary budget = available / remaining weeks
+  const weeklyDiscretionaryBudget = Math.max(0, availableForDiscretionary / remainingWeeks);
+  
+  // Safe to spend THIS week = weekly budget - this week's spending
+  const safeToSpendThisWeek = Math.max(0, weeklyDiscretionaryBudget - thisWeekSpending);
 
   // 11. Calculate runway date
   const runwayDate = calculateRunwayDate(
